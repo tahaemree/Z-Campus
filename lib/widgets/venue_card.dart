@@ -1,203 +1,255 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:campus_online/providers/venue_provider.dart';
 
-class VenueCard extends StatelessWidget {
+class VenueCard extends ConsumerStatefulWidget {
+  final String venueId;
   final String venueName;
   final String hours;
   final String location;
   final IconData venueIcon;
   final bool isFavorite;
-  final VoidCallback? onFavoritePressed;
-  final VoidCallback? onTap;
   final String? imageUrl;
-  final String venueId;
+  final VoidCallback onFavoritePressed;
+  final VoidCallback onTap;
+  final String? weekendHours;
+  final String? announcement;
 
   const VenueCard({
     super.key,
+    required this.venueId,
     required this.venueName,
     required this.hours,
     required this.location,
     required this.venueIcon,
-    required this.venueId,
-    this.isFavorite = false,
-    this.onFavoritePressed,
-    this.onTap,
-    this.imageUrl,
+    required this.isFavorite,
+    required this.imageUrl,
+    required this.onFavoritePressed,
+    required this.onTap,
+    this.weekendHours,
+    this.announcement,
   });
+
+  @override
+  ConsumerState<VenueCard> createState() => _VenueCardState();
+}
+
+class _VenueCardState extends ConsumerState<VenueCard> {
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
-    return Material(
-      color: Colors.transparent,
+    return Card(
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildImageContainer(colorScheme),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Column(
+        onTap: widget.onTap,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildImageContainer(theme),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildTitleRow(colorScheme),
-                    const SizedBox(height: 2),
-                    _buildHoursRow(colorScheme),
-                    const SizedBox(height: 2),
-                    _buildLocationRow(colorScheme),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            widget.venueName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          if (widget.location.isNotEmpty) ...[
+                            Row(
+                              children: [
+                                Icon(
+                                  widget.venueIcon,
+                                  size: 16,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    widget.location,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                          ],
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                size: 16,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: widget.weekendHours != null &&
+                                        widget.weekendHours!.isNotEmpty
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Hafta içi: ${widget.hours}',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                              color: theme
+                                                  .colorScheme.onSurfaceVariant,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Hafta sonu: ${widget.weekendHours!}',
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                              color: theme
+                                                  .colorScheme.onSurfaceVariant,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : Text(
+                                        widget.hours,
+                                        style:
+                                            theme.textTheme.bodySmall?.copyWith(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(
+                            widget.isFavorite
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: widget.isFavorite
+                                ? Colors.red
+                                : theme.colorScheme.onSurfaceVariant,
+                            size: 20,
+                          ),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: _isLoading
+                              ? null
+                              : () async {
+                                  setState(() {
+                                    _isLoading = true;
+                                  });
+                                  try {
+                                    await ref
+                                        .read(firestoreServiceProvider)
+                                        .toggleFavorite(widget.venueId);
+                                    ref.invalidate(venuesProvider);
+                                    ref.invalidate(featuredVenuesProvider);
+                                    ref.invalidate(
+                                        recentlyViewedVenuesProvider);
+                                    ref.invalidate(favoriteVenuesProvider);
+                                    clearVenuesCache(ref);
+                                    invalidateVenue(ref, widget.venueId);
+                                  } catch (e) {
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: const Text(
+                                              'Favori durumu güncellenemedi'),
+                                          backgroundColor:
+                                              theme.colorScheme.error,
+                                          behavior: SnackBarBehavior.floating,
+                                          duration: const Duration(seconds: 2),
+                                        ),
+                                      );
+                                    }
+                                  } finally {
+                                    if (mounted) {
+                                      setState(() {
+                                        _isLoading = false;
+                                      });
+                                    }
+                                  }
+                                },
+                        ),
+                        if (widget.announcement != null &&
+                            widget.announcement!.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Icon(
+                            Icons.campaign_rounded,
+                            color: theme.colorScheme.error,
+                            size: 20,
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildImageContainer(ColorScheme colorScheme) {
+  Widget _buildImageContainer(ThemeData theme) {
     return Container(
-      width: 96,
-      height: 96,
-      margin: const EdgeInsets.symmetric(vertical: 4),
+      width: 80,
+      height: 80,
+      margin: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.onSurface.withAlpha(25),
-        borderRadius: BorderRadius.circular(12),
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: imageUrl != null
+      child: widget.imageUrl != null
           ? ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(8),
               child: Image.network(
-                imageUrl!,
+                widget.imageUrl!,
                 fit: BoxFit.cover,
-                cacheWidth: 192, // 2x for retina displays
-                cacheHeight: 192,
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                              loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
                 errorBuilder: (context, error, stackTrace) {
                   return Icon(
-                    venueIcon,
-                    color: colorScheme.onSurface,
-                    size: 48,
+                    widget.venueIcon,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 32,
                   );
                 },
               ),
             )
           : Icon(
-              venueIcon,
-              color: colorScheme.onSurface,
-              size: 37,
+              widget.venueIcon,
+              color: theme.colorScheme.onSurfaceVariant,
+              size: 32,
             ),
-    );
-  }
-
-  Widget _buildTitleRow(ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            venueName,
-            style: TextStyle(
-              color: colorScheme.onSurface,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.3,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        IconButton(
-          onPressed: onFavoritePressed,
-          icon: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return ScaleTransition(
-                scale: CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.elasticOut,
-                  reverseCurve: Curves.easeInBack,
-                ),
-                child: child,
-              );
-            },
-            child: Icon(
-              isFavorite ? Icons.favorite : Icons.favorite_border_rounded,
-              key: ValueKey<bool>(isFavorite),
-              color:
-                  isFavorite ? Colors.redAccent : colorScheme.onSurfaceVariant,
-              size: 28,
-            ),
-          ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          splashRadius: 20,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHoursRow(ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Icon(
-          Icons.schedule_rounded,
-          color: colorScheme.onSurfaceVariant,
-          size: 13,
-        ),
-        const SizedBox(width: 2),
-        Text(
-          hours,
-          style: TextStyle(
-            color: colorScheme.onSurfaceVariant,
-            fontSize: 12,
-            letterSpacing: -0.2,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildLocationRow(ColorScheme colorScheme) {
-    return Row(
-      children: [
-        Icon(
-          Icons.location_on_outlined,
-          color: colorScheme.onSurfaceVariant,
-          size: 13,
-        ),
-        const SizedBox(width: 2),
-        Expanded(
-          child: Text(
-            location,
-            style: TextStyle(
-              color: colorScheme.onSurfaceVariant,
-              fontSize: 12,
-              letterSpacing: -0.2,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -12,22 +12,16 @@ class FirestoreService {
   CollectionReference get _usersRef => _firestore.collection('users');
 
   // Get all venues with favorite status
-  Stream<List<VenueModel>> getVenues() async* {
-    User? user = _auth.currentUser;
-    List<String> favoriteVenues = [];
-
-    if (user != null) {
-      DocumentSnapshot userDoc = await _usersRef.doc(user.uid).get();
-      if (userDoc.exists) {
-        favoriteVenues = List<String>.from(userDoc.get('favoriteVenues') ?? []);
-      }
-    }
-
-    yield* _venuesRef.snapshots().map((snapshot) => snapshot.docs.map((doc) {
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          data['isFavorite'] = favoriteVenues.contains(doc.id);
-          return VenueModel.fromJson(data, doc.id);
-        }).toList());
+  Stream<List<VenueModel>> getVenues() {
+    return _firestore
+        .collection('venues')
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => VenueModel.fromJson(doc.data(), doc.id))
+          .toList();
+    });
   }
 
   // Get venues by category with favorite status
@@ -54,66 +48,73 @@ class FirestoreService {
   }
 
   // Search venues with favorite status
-  Stream<List<VenueModel>> searchVenues(String query) async* {
-    if (query.isEmpty) {
-      yield [];
-      return;
-    }
+  Stream<List<VenueModel>> searchVenues(String query) {
+    if (query.isEmpty) return Stream.value([]);
 
-    User? user = _auth.currentUser;
-    List<String> favoriteVenues = [];
+    // Normalize search query
+    final normalizedQuery = _normalizeText(query);
+    final searchTerms =
+        normalizedQuery.split(' ').where((term) => term.isNotEmpty).toList();
 
-    if (user != null) {
-      DocumentSnapshot userDoc = await _usersRef.doc(user.uid).get();
-      if (userDoc.exists) {
-        favoriteVenues = List<String>.from(userDoc.get('favoriteVenues') ?? []);
-      }
-    }
-
-    final lowercaseQuery = query.toLowerCase();
-
-    yield* _venuesRef.orderBy('name').limit(30).snapshots().map((snapshot) {
+    return _firestore
+        .collection('venues')
+        .orderBy('name')
+        .snapshots()
+        .map((snapshot) {
       return snapshot.docs
-          .map((doc) {
-            Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-            data['isFavorite'] = favoriteVenues.contains(doc.id);
-            return VenueModel.fromJson(data, doc.id);
+          .where((doc) {
+            // Get venue data
+            final venueName = _normalizeText(doc.get('name').toString());
+            final venueDescription =
+                _normalizeText(doc.get('description').toString());
+            final venueMenu = _normalizeText(doc.get('menu').toString());
+
+            // Check if any search term matches any field
+            return searchTerms.any((term) =>
+                venueName.contains(term) ||
+                venueDescription.contains(term) ||
+                venueMenu.contains(term));
           })
-          .where((venue) =>
-              venue.name.toLowerCase().contains(lowercaseQuery) ||
-              venue.description.toLowerCase().contains(lowercaseQuery) ||
-              venue.category.toLowerCase().contains(lowercaseQuery))
+          .map((doc) => VenueModel.fromJson(doc.data(), doc.id))
           .toList();
     });
+  }
+
+  // Helper function to normalize text for search
+  String _normalizeText(String text) {
+    return text
+        .toLowerCase()
+        .replaceAll('ı', 'i')
+        .replaceAll('ğ', 'g')
+        .replaceAll('ü', 'u')
+        .replaceAll('ş', 's')
+        .replaceAll('ö', 'o')
+        .replaceAll('ç', 'c')
+        .replaceAll(RegExp(r'[^a-z0-9\s]'), ''); // Remove special characters
   }
 
   // Get venue by ID with favorite status
   Future<VenueModel?> getVenueById(String venueId) async {
     try {
-      DocumentSnapshot doc = await _venuesRef.doc(venueId).get();
+      final doc = await _venuesRef.doc(venueId).get();
+      if (!doc.exists) return null;
 
-      if (!doc.exists) {
-        return null;
-      }
-
-      bool isFavorite = false;
+      // Favori durumunu kontrol et
       User? user = _auth.currentUser;
+      bool isFavorite = false;
 
       if (user != null) {
         DocumentSnapshot userDoc = await _usersRef.doc(user.uid).get();
         if (userDoc.exists) {
-          List<String> favoriteVenues =
-              List<String>.from(userDoc.get('favoriteVenues') ?? []);
+          List<String> favoriteVenues = List<String>.from(userDoc.get('favoriteVenues') ?? []);
           isFavorite = favoriteVenues.contains(venueId);
         }
       }
 
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+      // Favori durumunu ekle
       data['isFavorite'] = isFavorite;
-
-      // Process venue view in background
-      _processVenueView(venueId);
-
+      
       return VenueModel.fromJson(data, doc.id);
     } catch (e) {
       debugPrint('Error getting venue by ID: $e');
@@ -250,71 +251,35 @@ class FirestoreService {
       }
 
       final userRef = _usersRef.doc(user.uid);
-      final venueRef = _venuesRef.doc(venueId);
 
-      await _firestore.runTransaction((transaction) async {
-        // Get user document
-        DocumentSnapshot userDoc = await transaction.get(userRef);
-        if (!userDoc.exists) {
-          throw Exception('Kullanıcı bulunamadı');
-        }
-
-        // Get venue document
-        DocumentSnapshot venueDoc = await transaction.get(venueRef);
-        if (!venueDoc.exists) {
-          throw Exception('Mekan bulunamadı');
-        }
-
-        // Get current favorite venues
-        List<String> favoriteVenues =
-            List<String>.from(userDoc.get('favoriteVenues') ?? []);
-
-        // Toggle favorite status
-        if (favoriteVenues.contains(venueId)) {
-          favoriteVenues.remove(venueId);
-        } else {
-          favoriteVenues.add(venueId);
-        }
-
-        // Update user document
-        transaction.update(userRef, {'favoriteVenues': favoriteVenues});
-
-        // Update venue document with favorite count
-        int favoriteCount = venueDoc.get('favoriteCount') ?? 0;
-        if (favoriteVenues.contains(venueId)) {
-          favoriteCount++;
-        } else {
-          favoriteCount = favoriteCount > 0 ? favoriteCount - 1 : 0;
-        }
-
-        transaction.update(venueRef, {
-          'favoriteCount': favoriteCount,
-          'updatedAt': FieldValue.serverTimestamp(),
+      // Get user document
+      DocumentSnapshot userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        // Create user document if it doesn't exist
+        await userRef.set({
+          'favoriteVenues': [],
+          'recentSearches': [],
+          'email': user.email,
+          'displayName': user.displayName,
         });
-      });
+      }
+
+      // Get current favorite venues
+      List<String> favoriteVenues =
+          List<String>.from(userDoc.get('favoriteVenues') ?? []);
+
+      // Toggle favorite status
+      if (favoriteVenues.contains(venueId)) {
+        favoriteVenues.remove(venueId);
+      } else {
+        favoriteVenues.add(venueId);
+      }
+
+      // Update user document
+      await userRef.update({'favoriteVenues': favoriteVenues});
     } catch (e) {
       debugPrint('Favori durumu güncellenirken hata: $e');
       throw Exception('Favori durumu güncellenemedi');
-    }
-  }
-
-  // Process venue view
-  Future<void> _processVenueView(String venueId) async {
-    try {
-      final futures = <Future>[];
-
-      futures.add(incrementVisitCount(venueId));
-
-      User? user = _auth.currentUser;
-      if (user != null) {
-        futures.add(_usersRef.doc(user.uid).update({
-          'recentlyViewed': FieldValue.arrayUnion([venueId])
-        }));
-      }
-
-      await Future.wait(futures);
-    } catch (e) {
-      debugPrint('Error in venue view processing: $e');
     }
   }
 
@@ -353,22 +318,7 @@ class FirestoreService {
   }
 
   Future<void> addVenue(VenueModel venue) async {
-    try {
-      await _firestore.collection('venues').doc(venue.id).set({
-        'name': venue.name,
-        'location': venue.location,
-        'category': venue.category,
-        'weekdayHours': venue.weekdayHours,
-        'weekendHours': venue.weekendHours,
-        'description': venue.description,
-        'imageUrl': venue.imageUrl,
-        'isFavorite': venue.isFavorite,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      throw Exception('Mekan eklenirken bir hata oluştu: $e');
-    }
+    await _firestore.collection('venues').doc(venue.id).set(venue.toJson());
   }
 
   Stream<QuerySnapshot> getVenuesStream() {
@@ -376,27 +326,10 @@ class FirestoreService {
   }
 
   Future<void> updateVenue(VenueModel venue) async {
-    try {
-      await _venuesRef.doc(venue.id).update({
-        'name': venue.name,
-        'location': venue.location,
-        'category': venue.category,
-        'weekdayHours': venue.weekdayHours,
-        'weekendHours': venue.weekendHours,
-        'description': venue.description,
-        'imageUrl': venue.imageUrl,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      throw Exception('Mekan güncellenirken bir hata oluştu: $e');
-    }
+    await _firestore.collection('venues').doc(venue.id).update(venue.toJson());
   }
 
   Future<void> deleteVenue(String venueId) async {
-    try {
-      await _venuesRef.doc(venueId).delete();
-    } catch (e) {
-      throw Exception('Mekan silinirken bir hata oluştu: $e');
-    }
+    await _firestore.collection('venues').doc(venueId).delete();
   }
 }

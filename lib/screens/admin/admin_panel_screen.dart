@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/services/firebase/firestore_service.dart';
 import 'package:campus_online/models/venue_model.dart';
+import 'package:campus_online/providers/venue_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminPanelScreen extends ConsumerStatefulWidget {
@@ -18,11 +19,13 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   final _locationController = TextEditingController();
   final _weekdayHoursController = TextEditingController();
   final _weekendHoursController = TextEditingController();
+  final _menuController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _announcementController = TextEditingController();
   final _imageUrlController = TextEditingController();
-  String _selectedCategory = 'cafeteria';
   bool _isEditing = false;
   String? _editingVenueId;
+  final bool _isLoading = false;
 
   @override
   void dispose() {
@@ -30,7 +33,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     _locationController.dispose();
     _weekdayHoursController.dispose();
     _weekendHoursController.dispose();
+    _menuController.dispose();
     _descriptionController.dispose();
+    _announcementController.dispose();
     _imageUrlController.dispose();
     super.dispose();
   }
@@ -39,28 +44,36 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
-      final now = DateTime.now();
       final venue = VenueModel(
         id: _editingVenueId ?? DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
-        location: _locationController.text,
-        category: _selectedCategory,
+        location:
+            _locationController.text.isEmpty ? null : _locationController.text,
         weekdayHours: _weekdayHoursController.text,
         weekendHours: _weekendHoursController.text,
-        description: _descriptionController.text,
+        menu: _menuController.text.isEmpty ? null : _menuController.text,
+        description: _descriptionController.text.isEmpty
+            ? null
+            : _descriptionController.text,
+        announcement: _announcementController.text.isEmpty
+            ? null
+            : _announcementController.text,
         imageUrl:
             _imageUrlController.text.isEmpty ? null : _imageUrlController.text,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
         isFavorite: false,
-        createdAt: now,
-        updatedAt: now,
         amenities: [],
         visitCount: 0,
       );
 
       if (_isEditing && _editingVenueId != null) {
         await _firestoreService.updateVenue(venue);
+        ref.invalidate(venueByIdProvider(_editingVenueId!));
+        clearVenuesCache(ref);
       } else {
         await _firestoreService.addVenue(venue);
+        clearVenuesCache(ref);
       }
 
       if (mounted) {
@@ -129,53 +142,62 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
 
   void _editVenue(VenueModel venue) {
     setState(() {
-      _isEditing = true;
       _editingVenueId = venue.id;
       _nameController.text = venue.name;
-      _locationController.text = venue.location;
-      _selectedCategory = venue.category;
+      _locationController.text = venue.location ?? '';
       _weekdayHoursController.text = venue.weekdayHours;
       _weekendHoursController.text = venue.weekendHours;
-      _descriptionController.text = venue.description;
+      _menuController.text = venue.menu ?? '';
+      _descriptionController.text = venue.description ?? '';
+      _announcementController.text = venue.announcement ?? '';
       _imageUrlController.text = venue.imageUrl ?? '';
+      _isEditing = true;
     });
-
-    DefaultTabController.of(context).animateTo(1);
   }
 
   void _clearForm() {
     setState(() {
-      _isEditing = false;
-      _editingVenueId = null;
       _nameController.clear();
       _locationController.clear();
       _weekdayHoursController.clear();
       _weekendHoursController.clear();
+      _menuController.clear();
       _descriptionController.clear();
+      _announcementController.clear();
       _imageUrlController.clear();
-      _selectedCategory = 'cafeteria';
+      _isEditing = false;
+      _editingVenueId = null;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Admin Paneli'),
-          centerTitle: true,
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Mekanlar'),
-              Tab(text: 'Yeni Mekan'),
-            ],
-          ),
-        ),
-        body: TabBarView(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Admin Paneli'),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        child: Column(
           children: [
-            _buildVenuesList(),
             _buildVenueForm(),
+            const Divider(height: 32),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.list_alt, size: 24),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Mekan Listesi',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            _buildVenuesList(),
           ],
         ),
       ),
@@ -204,12 +226,17 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         }).toList();
 
         if (venues.isEmpty) {
-          return const Center(
-            child: Text('Henüz mekan eklenmemiş'),
+          return const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+              child: Text('Henüz mekan eklenmemiş'),
+            ),
           );
         }
 
         return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.all(16),
           itemCount: venues.length,
           itemBuilder: (context, index) {
@@ -217,17 +244,38 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 16),
               child: ListTile(
-                title: Text(venue.name),
-                subtitle: Text(venue.category),
+                title: Text(
+                  venue.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(venue.location ?? '',
+                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+                isThreeLine: true,
                 trailing: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: const Icon(Icons.edit),
-                      onPressed: () => _editVenue(venue),
+                      onPressed: () {
+                        _editVenue(venue);
+                        // Scroll to top to show the form
+                        Scrollable.ensureVisible(
+                          _formKey.currentContext!,
+                          duration: const Duration(milliseconds: 500),
+                        );
+                      },
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete),
+                      color: Colors.red,
                       onPressed: () => _deleteVenue(venue.id),
                     ),
                   ],
@@ -241,13 +289,30 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   }
 
   Widget _buildVenueForm() {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(16),
       child: Form(
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            Row(
+              children: [
+                Icon(
+                  _isEditing ? Icons.edit_note : Icons.add_business,
+                  size: 24,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _isEditing ? 'Mekan Düzenle' : 'Yeni Mekan Ekle',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(
@@ -265,44 +330,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
             TextFormField(
               controller: _locationController,
               decoration: const InputDecoration(
-                labelText: 'Konum',
+                labelText: 'Konum (Opsiyonel)',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Lütfen konumu girin';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedCategory,
-              decoration: const InputDecoration(
-                labelText: 'Kategori',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'cafeteria', child: Text('Yemekhane')),
-                DropdownMenuItem(value: 'library', child: Text('Kütüphane')),
-                DropdownMenuItem(value: 'mosque', child: Text('Cami')),
-                DropdownMenuItem(value: 'cafe', child: Text('Kafe')),
-                DropdownMenuItem(value: 'gym', child: Text('Spor Salonu')),
-                DropdownMenuItem(value: 'kafeterya', child: Text('Kafeterya')),
-              ],
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                }
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Lütfen kategori seçin';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -311,9 +341,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 labelText: 'Hafta İçi Çalışma Saatleri',
                 border: OutlineInputBorder(),
               ),
+              maxLines: 3,
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Lütfen çalışma saatlerini girin';
+                  return 'Lütfen hafta içi çalışma saatlerini girin';
                 }
                 return null;
               },
@@ -322,15 +353,34 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
             TextFormField(
               controller: _weekendHoursController,
               decoration: const InputDecoration(
-                labelText: 'Hafta Sonu Çalışma Saatleri',
+                labelText: 'Hafta Sonu Çalışma Saatleri (Opsiyonel)',
                 border: OutlineInputBorder(),
               ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _menuController,
+              decoration: const InputDecoration(
+                labelText: 'Menü (Opsiyonel)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _descriptionController,
               decoration: const InputDecoration(
-                labelText: 'Açıklama',
+                labelText: 'Açıklama (Opsiyonel)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _announcementController,
+              decoration: const InputDecoration(
+                labelText: 'Duyuru (Opsiyonel)',
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
@@ -347,23 +397,31 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: _addVenue,
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _addVenue,
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    child: Text(_isEditing ? 'Güncelle' : 'Ekle'),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(_isEditing ? Icons.save : Icons.add),
+                    label: Text(_isEditing ? 'Güncelle' : 'Ekle'),
                   ),
                 ),
                 if (_isEditing) ...[
                   const SizedBox(width: 16),
                   Expanded(
-                    child: OutlinedButton(
+                    child: OutlinedButton.icon(
                       onPressed: _clearForm,
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('İptal'),
+                      icon: const Icon(Icons.cancel),
+                      label: const Text('İptal'),
                     ),
                   ),
                 ],

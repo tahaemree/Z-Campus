@@ -84,36 +84,64 @@ final venuesByCategoryProvider =
 
 /// Stream of venues matching search query - debounced to avoid excessive queries
 final searchVenuesProvider =
-    StreamProvider.family<List<VenueModel>, String>((ref, query) {
-  if (query.isEmpty) return Stream.value(const []);
-  final firestoreService = ref.watch(firestoreServiceProvider);
-  return firestoreService.searchVenues(query);
+    StreamProvider.family<List<VenueModel>, String>((ref, query) async* {
+  if (query.isEmpty) {
+    ref.read(isSearchingProvider.notifier).state = false;
+    yield [];
+    return;
+  }
+
+  try {
+    ref.read(isSearchingProvider.notifier).state = true;
+    final firestoreService = ref.read(firestoreServiceProvider);
+
+    await for (final venues in firestoreService.searchVenues(query)) {
+      ref.read(isSearchingProvider.notifier).state = false;
+      yield venues;
+    }
+  } catch (e) {
+    ref.read(isSearchingProvider.notifier).state = false;
+    debugPrint('Search error: $e');
+    yield [];
+  }
 });
 
 /// Venue by ID provider with automatic caching based on last fetch
-final venueByIdProvider =
-    FutureProvider.family<VenueModel?, String>((ref, venueId) async {
-  if (venueId.isEmpty) return null;
-
-  final cacheManager = ref.watch(venuesCacheProvider.notifier);
-  final cacheKey = 'venue_$venueId';
-
-  // Check cache first
-  final cachedVenues = cacheManager.get(cacheKey);
-  if (cachedVenues != null && cachedVenues.isNotEmpty) {
-    return cachedVenues.first;
+final venueByIdProvider = FutureProvider.family<VenueModel?, String>((ref, venueId) async {
+  if (venueId.isEmpty) {
+    throw Exception('Geçersiz mekan ID\'si');
   }
 
-  // Fetch from Firestore
-  final firestoreService = ref.watch(firestoreServiceProvider);
-  final venue = await firestoreService.getVenueById(venueId);
+  try {
+    final cacheManager = ref.watch(venuesCacheProvider.notifier);
+    final cacheKey = 'venue_$venueId';
 
-  // Cache the result if not null
-  if (venue != null) {
+    // Önbellekten kontrol et
+    final cachedVenues = cacheManager.get(cacheKey);
+    if (cachedVenues != null && cachedVenues.isNotEmpty) {
+      return cachedVenues.first;
+    }
+
+    // Firestore'dan çek
+    final firestoreService = ref.watch(firestoreServiceProvider);
+    final venue = await firestoreService.getVenueById(venueId);
+
+    if (venue == null) {
+      throw Exception('Mekan bulunamadı');
+    }
+
+    // Sonucu önbelleğe al
     cacheManager.put(cacheKey, [venue]);
+    
+    return venue;
+  } catch (e) {
+    debugPrint('Error fetching venue by ID: $e');
+    // Daha açıklayıcı hata mesajı
+    if (e.toString().contains('Mekan bulunamadı')) {
+      throw Exception('Mekan bulunamadı');
+    }
+    throw Exception('Mekan yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
   }
-
-  return venue;
 });
 
 /// Featured venues with TTL-based caching
@@ -233,3 +261,5 @@ final searchResultsProvider = StreamProvider<List<VenueModel>>((ref) {
 });
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final isSearchingProvider = StateProvider<bool>((ref) => false);

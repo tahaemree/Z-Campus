@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/providers/theme_provider.dart';
-import 'package:campus_online/main.dart' as app;
 import 'package:campus_online/screens/auth/login_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:campus_online/screens/admin/admin_panel_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -12,25 +10,124 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeProvider).isDarkMode;
-    final authService = ref.read(app.authServiceProvider);
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final authService = ref.read(authServiceProvider);
+    final currentUser = authService.currentUser;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text('Ayarlar'),
         centerTitle: true,
         elevation: 0,
       ),
       body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
         children: [
+          // PROFIL BOLUMU
           if (currentUser != null) ...[
-            _buildUserSection(context, currentUser),
-            const SizedBox(height: 16),
-            _buildDivider(),
+            GestureDetector(
+              onTap: () {
+                Navigator.pushNamed(context, '/profile');
+              },
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.shadowColor.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      backgroundImage: currentUser.photoURL != null &&
+                              currentUser.photoURL!.isNotEmpty
+                          ? NetworkImage(currentUser.photoURL!)
+                          : null,
+                      child: currentUser.photoURL == null ||
+                              currentUser.photoURL!.isEmpty
+                          ? Icon(Icons.person,
+                              size: 36,
+                              color: theme.colorScheme.onPrimaryContainer)
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentUser.displayName ?? 'İsimsiz Kullanıcı',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            currentUser.email ?? '',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ] else ...[
+            Card(
+              elevation: 0,
+              margin: const EdgeInsets.only(bottom: 16),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 32,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      child: Icon(Icons.person,
+                          size: 32,
+                          color: theme.colorScheme.onPrimaryContainer),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Giriş yapmadınız',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => const LoginScreen()),
+                        );
+                      },
+                      child: const Text('Giriş Yap'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
-          const SizedBox(height: 8),
           _buildSection(
             title: 'Görünüm',
             icon: Icons.palette_outlined,
@@ -38,15 +135,14 @@ class SettingsScreen extends ConsumerWidget {
               _buildSettingTile(
                 leading: Icon(
                   isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: theme.colorScheme.primary,
                 ),
-                title: 'Koyu Mod',
-                trailing: Switch.adaptive(
+                title: 'Karanlık Mod',
+                trailing: Switch(
                   value: isDarkMode,
                   onChanged: (value) {
                     ref.read(themeProvider.notifier).toggleTheme();
                   },
-                  activeColor: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ],
@@ -59,7 +155,7 @@ class SettingsScreen extends ConsumerWidget {
               _buildSettingTile(
                 leading: Icon(
                   Icons.privacy_tip_outlined,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: theme.colorScheme.primary,
                 ),
                 title: 'Gizlilik Politikası',
                 onTap: () => Navigator.pushNamed(context, '/privacy_policy'),
@@ -68,7 +164,7 @@ class SettingsScreen extends ConsumerWidget {
               _buildSettingTile(
                 leading: Icon(
                   Icons.description_outlined,
-                  color: Theme.of(context).colorScheme.primary,
+                  color: theme.colorScheme.primary,
                 ),
                 title: 'Kullanım Koşulları',
                 onTap: () => Navigator.pushNamed(context, '/terms_of_service'),
@@ -86,7 +182,7 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSettingTile(
                   leading: Icon(
                     Icons.dashboard_outlined,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: theme.colorScheme.primary,
                   ),
                   title: 'Admin Paneli',
                   onTap: () => Navigator.push(
@@ -111,20 +207,45 @@ class SettingsScreen extends ConsumerWidget {
                 _buildSettingTile(
                   leading: Icon(
                     Icons.logout,
-                    color: Theme.of(context).colorScheme.error,
+                    color: theme.colorScheme.error,
                   ),
                   title: 'Çıkış Yap',
-                  titleColor: Theme.of(context).colorScheme.error,
+                  titleColor: theme.colorScheme.error,
                   onTap: () async {
-                    await authService.signOut();
-                    if (context.mounted) {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                        (route) => false,
-                      );
+                    // Çıkış yapmadan önce onay al
+                    final shouldLogout = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Çıkış Yap'),
+                        content: const Text(
+                            'Çıkış yapmak istediğinize emin misiniz?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('İptal'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: TextButton.styleFrom(
+                              foregroundColor: theme.colorScheme.error,
+                            ),
+                            child: const Text('Çıkış Yap'),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (shouldLogout == true) {
+                      await authService.signOut();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      }
                     }
                   },
                 ),
@@ -132,74 +253,6 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserSection(BuildContext context, User user) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Theme.of(context).colorScheme.primary,
-                  Theme.of(context).colorScheme.secondary,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                user.displayName?.substring(0, 1).toUpperCase() ?? '?',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.displayName ?? 'Kullanıcı',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  user.email ?? '',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
@@ -223,14 +276,19 @@ class SettingsScreen extends ConsumerWidget {
                 title,
                 style: const TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
         ),
-        ...children,
+        Card(
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          child: Column(
+            children: children,
+          ),
+        ),
       ],
     );
   }
@@ -238,32 +296,30 @@ class SettingsScreen extends ConsumerWidget {
   Widget _buildSettingTile({
     required Widget leading,
     required String title,
+    Color? titleColor,
     Widget? trailing,
     VoidCallback? onTap,
     bool showChevron = false,
-    Color? titleColor,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: ListTile(
-        leading: leading,
-        title: Text(
-          title,
-          style: TextStyle(
-            color: titleColor,
-            fontWeight: FontWeight.w500,
-          ),
+    return ListTile(
+      leading: leading,
+      title: Text(
+        title,
+        style: TextStyle(
+          color: titleColor,
+          fontWeight: FontWeight.w500,
         ),
-        trailing: trailing ??
-            (showChevron
-                ? const Icon(Icons.chevron_right, size: 20)
-                : const SizedBox.shrink()),
-        onTap: onTap,
       ),
+      trailing:
+          trailing ?? (showChevron ? const Icon(Icons.chevron_right) : null),
+      onTap: onTap,
     );
   }
 
   Widget _buildDivider() {
-    return const Divider(height: 1, thickness: 1);
+    return const Divider(
+      height: 1,
+      thickness: 1,
+    );
   }
 }

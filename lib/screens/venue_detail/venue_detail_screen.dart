@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/providers/venue_provider.dart';
-import 'package:campus_online/services/firebase/firestore_service.dart';
 import 'package:campus_online/models/venue_model.dart';
 
 class VenueDetailScreen extends ConsumerStatefulWidget {
@@ -17,315 +16,369 @@ class VenueDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
+  bool _isLoading = false;
 
-  Future<void> _toggleFavorite() async {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadVenueData();
+    });
+  }
+
+  Future<void> _loadVenueData() async {
     try {
-      // Get current venue
-      final currentVenue = ref.read(venueByIdProvider(widget.venueId)).value;
-      if (currentVenue == null) return;
-
-      // Optimistic UI update
-      ref.read(venuesCacheProvider.notifier).put(
-        'venue_${widget.venueId}',
-        [currentVenue.copyWith(isFavorite: !currentVenue.isFavorite)],
-      );
-
-      // Update Firestore
-      await _firestoreService.toggleFavorite(widget.venueId);
-
-      // Clear all relevant caches
-      invalidateVenue(ref, widget.venueId);
-      clearVenuesCache(ref, specificKey: 'favorites');
-      clearVenuesCache(ref, specificKey: 'featured');
-      clearVenuesCache(ref, specificKey: 'recentlyViewed');
-
-      // Refresh the venue data
-      ref.invalidate(venueByIdProvider(widget.venueId));
+      final firestoreService = ref.read(firestoreServiceProvider);
+      await firestoreService.incrementVisitCount(widget.venueId);
     } catch (e) {
-      if (mounted) {
-        // Restore state on error
-        invalidateVenue(ref, widget.venueId);
-        clearVenuesCache(ref, specificKey: 'favorites');
-        clearVenuesCache(ref, specificKey: 'featured');
-        clearVenuesCache(ref, specificKey: 'recentlyViewed');
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Favori durumu güncellenemedi'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
+      debugPrint('Error incrementing visit count: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final venueAsync = ref.watch(venueByIdProvider(widget.venueId));
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      floatingActionButton: venueAsync.whenData((venue) {
-            if (venue == null) return const SizedBox.shrink();
-            return FloatingActionButton(
-              onPressed: _toggleFavorite,
-              backgroundColor: Colors.white,
-              elevation: 4,
-              child: Icon(
-                venue.isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: venue.isFavorite ? Colors.red : Colors.grey,
-              ),
-            );
-          }).value ??
-          const SizedBox.shrink(),
       body: venueAsync.when(
         data: (venue) {
           if (venue == null) {
-            return const Center(child: Text('Mekan bulunamadı'));
-          }
-
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                Hero(
-                  tag: 'venue_${venue.id}',
-                  child: _buildHeader(venue),
-                ),
-                Transform.translate(
-                  offset: const Offset(0, -20),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(20),
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            venue.name,
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.access_time_rounded,
-                                size: 24,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Çalışma Saatleri',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerLowest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                _buildTimeRow('Hafta İçi', venue.weekdayHours),
-                                if (venue.weekendHours.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  _buildTimeRow(
-                                      'Hafta Sonu', venue.weekendHours),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_rounded,
-                                size: 24,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'Konum',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surfaceContainerLowest,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              venue.location,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Mekan bulunamadı',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Geri Dön'),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return CustomScrollView(
+            slivers: [
+              _buildAppBar(venue, theme),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(left: 16, bottom: 8, top: 8),
+                        child: Text(
+                          venue.name,
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 28,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      if (venue.announcement != null &&
+                          venue.announcement!.isNotEmpty) ...[
+                        _buildAnnouncementCard(venue, theme),
+                        const SizedBox(height: 16),
+                      ],
+                      _buildHoursSection(venue, theme),
+                      if (venue.menu != null && venue.menu!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _buildMenuSection(venue, theme),
+                      ],
+                      if (venue.description != null &&
+                          venue.description!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _buildDescriptionSection(venue, theme),
+                      ],
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          );
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline_rounded,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Bir hata oluştu',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: Theme.of(context).textTheme.bodyMedium,
-                textAlign: TextAlign.center,
               ),
             ],
-          ),
-        ),
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Hata: $error')),
       ),
     );
   }
 
-  Widget _buildTimeRow(String day, String hours) {
-    return Row(
+  SliverAppBar _buildAppBar(VenueModel venue, ThemeData theme) {
+    return SliverAppBar(
+      expandedHeight: 200,
+      pinned: true,
+      flexibleSpace: FlexibleSpaceBar(
+        background: venue.imageUrl != null
+            ? Image.network(
+                venue.imageUrl!,
+                fit: BoxFit.cover,
+              )
+            : Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: Icon(
+                  Icons.place,
+                  size: 64,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(
+            venue.isFavorite ? Icons.favorite : Icons.favorite_border,
+            color: venue.isFavorite ? Colors.red : Colors.white,
+          ),
+          onPressed: _isLoading
+              ? null
+              : () async {
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  try {
+                    await ref
+                        .read(firestoreServiceProvider)
+                        .toggleFavorite(venue.id);
+
+                    // Clear all caches and invalidate providers
+                    clearVenuesCache(ref);
+                    ref.invalidate(venuesProvider);
+                    ref.invalidate(featuredVenuesProvider);
+                    ref.invalidate(recentlyViewedVenuesProvider);
+                    ref.invalidate(favoriteVenuesProvider);
+                    ref.invalidate(venueByIdProvider(venue.id));
+
+                    // Force a rebuild of the widget
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('Favori durumu güncellenemedi'),
+                          backgroundColor: theme.colorScheme.error,
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  } finally {
+                    if (mounted) {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    }
+                  }
+                },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAnnouncementCard(VenueModel venue, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$day: ',
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.announcement,
+                color: theme.colorScheme.error,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Duyuru',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
         ),
-        Text(
-          hours,
-          style: const TextStyle(
-            fontSize: 16,
+        SizedBox(
+          width: double.infinity,
+          child: Card(
+            color: theme.colorScheme.errorContainer,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                venue.announcement!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildHeader(VenueModel venue) {
-    return Container(
-      height: 300,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+  Widget _buildHoursSection(VenueModel venue, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.access_time,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Çalışma Saatleri',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: venue.imageUrl != null
-          ? Image.network(
-              venue.imageUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) =>
-                  _buildDefaultHeader(venue),
-            )
-          : _buildDefaultHeader(venue),
+        ),
+        SizedBox(
+          width: double.infinity,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: venue.weekendHours.isNotEmpty
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHoursRow('Hafta İçi', venue.weekdayHours, theme),
+                        const SizedBox(height: 8),
+                        _buildHoursRow('Hafta Sonu', venue.weekendHours, theme),
+                      ],
+                    )
+                  : Text(
+                      venue.weekdayHours,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildDefaultHeader(VenueModel venue) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Theme.of(context).colorScheme.primary,
-            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-          ],
+  Widget _buildHoursRow(String label, String hours, ThemeData theme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
-      ),
-      child: Center(
-        child: Icon(
-          _getVenueIcon(venue.category),
-          size: 80,
-          color: Colors.white.withOpacity(0.9),
+        Expanded(
+          child: Text(
+            hours,
+            style: theme.textTheme.bodyMedium,
+          ),
         ),
-      ),
+      ],
     );
   }
 
-  IconData _getVenueIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'mosque':
-      case 'cami':
-        return Icons.mosque;
-      case 'library':
-      case 'kütüphane':
-        return Icons.local_library;
-      case 'cafeteria':
-      case 'yemekhane':
-        return Icons.restaurant;
-      case 'cafe':
-      case 'kafe':
-        return Icons.coffee;
-      case 'gym':
-      case 'spor salonu':
-        return Icons.fitness_center;
-      default:
-        return Icons.place;
-    }
+  Widget _buildMenuSection(VenueModel venue, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.restaurant_menu,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Menü',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: double.infinity,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                venue.menu!,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionSection(VenueModel venue, ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 8),
+          child: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: theme.colorScheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Açıklama',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: double.infinity,
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                venue.description!,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

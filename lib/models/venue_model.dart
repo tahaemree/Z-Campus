@@ -3,49 +3,52 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class VenueModel {
   final String id;
   final String name;
-  final String description;
-  final String location;
+  final String? location;
   final String weekdayHours;
   final String weekendHours;
+  final String? menu;
+  final String? description;
+  final String? announcement;
+  final String? imageUrl;
   final DateTime createdAt;
   final DateTime updatedAt;
-  final int visitCount;
-  final String? imageUrl;
-  final String category;
-  final List<String> amenities;
   final bool isFavorite;
+  final List<String> amenities;
+  final int visitCount;
 
-  const VenueModel({
+  VenueModel({
     required this.id,
     required this.name,
-    required this.description,
-    required this.location,
+    this.location,
     required this.weekdayHours,
     required this.weekendHours,
+    this.menu,
+    this.description,
+    this.announcement,
+    this.imageUrl,
     required this.createdAt,
     required this.updatedAt,
-    this.visitCount = 0,
-    this.imageUrl,
-    required this.category,
-    this.amenities = const [],
     this.isFavorite = false,
+    this.amenities = const [],
+    this.visitCount = 0,
   });
 
   factory VenueModel.fromJson(Map<String, dynamic> json, String id) {
     return VenueModel(
       id: id,
-      name: json['name'] as String? ?? '',
-      description: json['description'] as String? ?? '',
-      location: json['location'] as String? ?? '',
+      name: json['name'] as String,
+      location: json['location'] as String?,
       weekdayHours: json['weekdayHours'] as String? ?? '',
       weekendHours: json['weekendHours'] as String? ?? '',
+      menu: json['menu'] as String?,
+      description: json['description'] as String?,
+      announcement: json['announcement'] as String?,
+      imageUrl: json['imageUrl'] as String?,
       createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       updatedAt: (json['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      visitCount: json['visitCount'] as int? ?? 0,
-      imageUrl: json['imageUrl'] as String?,
-      category: json['category'] as String? ?? '',
-      amenities: List<String>.from(json['amenities'] as List<dynamic>? ?? []),
       isFavorite: json['isFavorite'] as bool? ?? false,
+      amenities: List<String>.from(json['amenities'] ?? []),
+      visitCount: json['visitCount'] as int? ?? 0,
     );
   }
 
@@ -54,58 +57,55 @@ class VenueModel {
     return VenueModel.fromJson(data, doc.id);
   }
 
-  Map<String, dynamic> toJson() => {
-        'name': name,
-        'description': description,
-        'location': location,
-        'weekdayHours': weekdayHours,
-        'weekendHours': weekendHours,
-        'createdAt': Timestamp.fromDate(createdAt),
-        'updatedAt': Timestamp.fromDate(updatedAt),
-        'visitCount': visitCount,
-        'imageUrl': imageUrl,
-        'category': category,
-        'amenities': amenities,
-        'isFavorite': isFavorite,
-      };
-
-  bool get isCafeteria =>
-      category.toLowerCase() == 'cafeteria' ||
-      category.toLowerCase() == 'yemekhane';
-
-  bool get isLibrary =>
-      category.toLowerCase() == 'library' ||
-      category.toLowerCase() == 'kütüphane';
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'location': location,
+      'weekdayHours': weekdayHours,
+      'weekendHours': weekendHours,
+      'menu': menu,
+      'description': description,
+      'announcement': announcement,
+      'imageUrl': imageUrl,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'updatedAt': Timestamp.fromDate(updatedAt),
+      'isFavorite': isFavorite,
+      'amenities': amenities,
+      'visitCount': visitCount,
+    };
+  }
 
   VenueModel copyWith({
     String? id,
     String? name,
-    String? description,
     String? location,
     String? weekdayHours,
     String? weekendHours,
+    String? menu,
+    String? description,
+    String? announcement,
+    String? imageUrl,
     DateTime? createdAt,
     DateTime? updatedAt,
-    int? visitCount,
-    String? imageUrl,
-    String? category,
-    List<String>? amenities,
     bool? isFavorite,
+    List<String>? amenities,
+    int? visitCount,
   }) {
     return VenueModel(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
       location: location ?? this.location,
       weekdayHours: weekdayHours ?? this.weekdayHours,
       weekendHours: weekendHours ?? this.weekendHours,
+      menu: menu ?? this.menu,
+      description: description ?? this.description,
+      announcement: announcement ?? this.announcement,
+      imageUrl: imageUrl ?? this.imageUrl,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      visitCount: visitCount ?? this.visitCount,
-      imageUrl: imageUrl ?? this.imageUrl,
-      category: category ?? this.category,
-      amenities: amenities ?? this.amenities,
       isFavorite: isFavorite ?? this.isFavorite,
+      amenities: amenities ?? this.amenities,
+      visitCount: visitCount ?? this.visitCount,
     );
   }
 }

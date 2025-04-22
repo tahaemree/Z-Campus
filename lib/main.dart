@@ -9,6 +9,8 @@ import 'package:campus_online/config/theme/app_theme.dart';
 import 'package:campus_online/screens/venue_detail/venue_detail_screen.dart';
 import 'package:campus_online/screens/settings/legal_screens.dart';
 import 'package:campus_online/screens/home/explore_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:campus_online/screens/settings/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +20,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     ),
     ThemeNotifier.initialize(),
+    SharedPreferences.getInstance(), // SharedPreferences başlatılıyor
   ]);
 
   runApp(
@@ -62,6 +65,7 @@ class MyApp extends ConsumerWidget {
         '/privacy_policy': (context) => const PrivacyPolicyScreen(),
         '/terms_of_service': (context) => const TermsOfServiceScreen(),
         '/explore': (context) => const ExploreScreen(),
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }
