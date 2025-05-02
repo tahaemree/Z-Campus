@@ -17,6 +17,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _locationController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
   final _weekdayHoursController = TextEditingController();
   final _weekendHoursController = TextEditingController();
   final _menuController = TextEditingController();
@@ -31,6 +33,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   void dispose() {
     _nameController.dispose();
     _locationController.dispose();
+    _latitudeController.dispose();
+    _longitudeController.dispose();
     _weekdayHoursController.dispose();
     _weekendHoursController.dispose();
     _menuController.dispose();
@@ -49,6 +53,12 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
         name: _nameController.text,
         location:
             _locationController.text.isEmpty ? null : _locationController.text,
+        latitude: _latitudeController.text.isEmpty
+            ? null
+            : double.parse(_latitudeController.text),
+        longitude: _longitudeController.text.isEmpty
+            ? null
+            : double.parse(_longitudeController.text),
         weekdayHours: _weekdayHoursController.text,
         weekendHours: _weekendHoursController.text,
         menu: _menuController.text.isEmpty ? null : _menuController.text,
@@ -145,6 +155,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       _editingVenueId = venue.id;
       _nameController.text = venue.name;
       _locationController.text = venue.location ?? '';
+      _latitudeController.text = venue.latitude?.toString() ?? '';
+      _longitudeController.text = venue.longitude?.toString() ?? '';
       _weekdayHoursController.text = venue.weekdayHours;
       _weekendHoursController.text = venue.weekendHours;
       _menuController.text = venue.menu ?? '';
@@ -159,6 +171,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
     setState(() {
       _nameController.clear();
       _locationController.clear();
+      _latitudeController.clear();
+      _longitudeController.clear();
       _weekdayHoursController.clear();
       _weekendHoursController.clear();
       _menuController.clear();
@@ -333,6 +347,62 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 labelText: 'Konum (Opsiyonel)',
                 border: OutlineInputBorder(),
               ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _latitudeController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Enlem (Opsiyonel)',
+                      border: OutlineInputBorder(),
+                      hintText: 'Örn: 41.0082',
+                    ),
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        try {
+                          double lat = double.parse(value);
+                          if (lat < -90 || lat > 90) {
+                            return 'Enlem -90 ile 90 arasında olmalıdır';
+                          }
+                        } catch (e) {
+                          return 'Geçerli bir sayı girin';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _longitudeController,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    decoration: const InputDecoration(
+                      labelText: 'Boylam (Opsiyonel)',
+                      border: OutlineInputBorder(),
+                      hintText: 'Örn: 28.9784',
+                    ),
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        try {
+                          double lon = double.parse(value);
+                          if (lon < -180 || lon > 180) {
+                            return 'Boylam -180 ile 180 arasında olmalıdır';
+                          }
+                        } catch (e) {
+                          return 'Geçerli bir sayı girin';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             TextFormField(

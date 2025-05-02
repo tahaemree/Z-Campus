@@ -1,47 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:campus_online/services/firebase/auth_service.dart';
-import 'package:campus_online/screens/auth/auth_wrapper.dart';
+import 'package:campus_online/providers/theme_provider.dart'; // Add this import
 import 'package:campus_online/firebase_options.dart';
-import 'package:campus_online/providers/theme_provider.dart';
-import 'package:campus_online/config/theme/app_theme.dart';
 import 'package:campus_online/screens/venue_detail/venue_detail_screen.dart';
 import 'package:campus_online/screens/settings/legal_screens.dart';
-import 'package:campus_online/screens/home/explore_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:campus_online/screens/settings/profile_screen.dart';
+import 'package:campus_online/screens/auth/login_screen.dart';
+import 'package:campus_online/screens/navi_bar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Future.wait([
-    Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    ),
-    ThemeNotifier.initialize(),
-    SharedPreferences.getInstance(), // SharedPreferences başlatılıyor
-  ]);
-
-  runApp(
-    const ProviderScope(
-      child: App(),
-    ),
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
   );
-}
 
-final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+  // Initialize and load theme
+  final themeNotifier = ThemeNotifier();
+  await themeNotifier.loadTheme();
 
-class App extends ConsumerWidget {
-  const App({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Initialize theme
-    ref.read(themeProvider.notifier).loadTheme();
-
-    return const MyApp();
-  }
+  runApp(ProviderScope(
+    overrides: [
+      themeProvider.overrideWith((ref) => themeNotifier),
+    ],
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends ConsumerWidget {
@@ -49,22 +33,29 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeState = ref.watch(themeProvider);
+    final auth = FirebaseAuth.instance;
+    final isDarkMode = ref.watch(themeProvider).isDarkMode;
 
     return MaterialApp(
-      title: 'Campus Online',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
-      themeMode: themeState.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: const AuthWrapper(),
       debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+      ),
+      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      home: auth.currentUser != null ? const MainScreen() : const SignIn(),
       routes: {
         '/venue_details': (context) => VenueDetailScreen(
               venueId: ModalRoute.of(context)!.settings.arguments as String,
             ),
         '/privacy_policy': (context) => const PrivacyPolicyScreen(),
         '/terms_of_service': (context) => const TermsOfServiceScreen(),
-        '/explore': (context) => const ExploreScreen(),
         '/profile': (context) => const ProfileScreen(),
       },
     );

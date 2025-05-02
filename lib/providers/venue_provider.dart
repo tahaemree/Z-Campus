@@ -1,13 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/models/venue_model.dart';
 import 'package:campus_online/services/firebase/firestore_service.dart';
-import 'package:campus_online/services/firebase/auth_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// Service providers - shared instances for the app
 final firestoreServiceProvider =
     Provider<FirestoreService>((ref) => FirestoreService());
-final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
 /// Cache for venues - uses TTL based caching mechanism
 class CacheManager
@@ -107,7 +107,8 @@ final searchVenuesProvider =
 });
 
 /// Venue by ID provider with automatic caching based on last fetch
-final venueByIdProvider = FutureProvider.family<VenueModel?, String>((ref, venueId) async {
+final venueByIdProvider =
+    FutureProvider.family<VenueModel?, String>((ref, venueId) async {
   if (venueId.isEmpty) {
     throw Exception('Geçersiz mekan ID\'si');
   }
@@ -132,7 +133,7 @@ final venueByIdProvider = FutureProvider.family<VenueModel?, String>((ref, venue
 
     // Sonucu önbelleğe al
     cacheManager.put(cacheKey, [venue]);
-    
+
     return venue;
   } catch (e) {
     debugPrint('Error fetching venue by ID: $e');
@@ -140,7 +141,8 @@ final venueByIdProvider = FutureProvider.family<VenueModel?, String>((ref, venue
     if (e.toString().contains('Mekan bulunamadı')) {
       throw Exception('Mekan bulunamadı');
     }
-    throw Exception('Mekan yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+    throw Exception(
+        'Mekan yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
   }
 });
 
@@ -170,7 +172,7 @@ final recentlyViewedVenuesProvider =
     FutureProvider<List<VenueModel>>((ref) async {
   final cacheManager = ref.watch(venuesCacheProvider.notifier);
   const cacheKey = 'recentlyViewed';
-  final userId = ref.watch(authServiceProvider).currentUser?.uid;
+  final userId = FirebaseAuth.instance.currentUser?.uid;
 
   if (userId == null) {
     throw Exception('User not logged in');
@@ -196,7 +198,7 @@ final recentlyViewedVenuesProvider =
 final favoriteVenuesProvider = FutureProvider<List<VenueModel>>((ref) async {
   final cacheManager = ref.watch(venuesCacheProvider.notifier);
   const cacheKey = 'favorites';
-  final userId = ref.watch(authServiceProvider).currentUser?.uid;
+  final userId = FirebaseAuth.instance.currentUser?.uid;
 
   if (userId == null) {
     throw Exception('User not logged in');
@@ -208,12 +210,14 @@ final favoriteVenuesProvider = FutureProvider<List<VenueModel>>((ref) async {
     return cachedVenues;
   }
 
-  // Fetch from Firestore with efficient batch loading
+  // Fetch from Firestore
   final firestoreService = ref.watch(firestoreServiceProvider);
-  final userData = await ref.watch(authServiceProvider).getUserData();
-  final favoriteVenueIds = userData.favoriteVenues;
-
-  final venues = await firestoreService.getVenuesByIds(favoriteVenueIds);
+  // Get all favorited venue IDs for the user and then fetch those venues
+  final userDoc =
+      await FirebaseFirestore.instance.collection('users').doc(userId).get();
+  final favoriteIds =
+      List<String>.from(userDoc.data()?['favoriteVenues'] ?? []);
+  final venues = await firestoreService.getVenuesByIds(favoriteIds);
 
   // Cache the result
   cacheManager.put(cacheKey, venues);
@@ -221,16 +225,24 @@ final favoriteVenuesProvider = FutureProvider<List<VenueModel>>((ref) async {
   return venues;
 });
 
-/// Recent searches with custom caching
+/// Recent searches provider
 final recentSearchesProvider = FutureProvider<List<VenueModel>>((ref) async {
-  final authService = ref.watch(authServiceProvider);
   final firestoreService = ref.watch(firestoreServiceProvider);
+  final userId = FirebaseAuth.instance.currentUser?.uid;
+
+  if (userId == null) {
+    return const [];
+  }
 
   try {
-    final userData = await authService.getUserData();
-    if (userData.recentSearches.isEmpty) return const [];
+    // Get user document to get recentSearches array
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final recentSearchIds =
+        List<String>.from(userDoc.data()?['recentSearches'] ?? []);
+    if (recentSearchIds.isEmpty) return const [];
 
-    return firestoreService.getVenuesByIds(userData.recentSearches);
+    return firestoreService.getVenuesByIds(recentSearchIds);
   } catch (e) {
     debugPrint('Error getting recent searches: $e');
     return const [];

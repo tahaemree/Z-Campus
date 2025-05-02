@@ -48,35 +48,45 @@ class FirestoreService {
   }
 
   // Search venues with favorite status
-  Stream<List<VenueModel>> searchVenues(String query) {
-    if (query.isEmpty) return Stream.value([]);
+  Stream<List<VenueModel>> searchVenues(String query) async* {
+    if (query.isEmpty) yield [];
+
+    // Get current user's favorite venues
+    User? user = _auth.currentUser;
+    List<String> favoriteVenues = [];
+
+    if (user != null) {
+      DocumentSnapshot userDoc = await _usersRef.doc(user.uid).get();
+      if (userDoc.exists) {
+        favoriteVenues = List<String>.from(userDoc.get('favoriteVenues') ?? []);
+      }
+    }
 
     // Normalize search query
     final normalizedQuery = _normalizeText(query);
     final searchTerms =
         normalizedQuery.split(' ').where((term) => term.isNotEmpty).toList();
 
-    return _firestore
+    yield* _firestore
         .collection('venues')
         .orderBy('name')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .where((doc) {
-            // Get venue data
-            final venueName = _normalizeText(doc.get('name').toString());
-            final venueDescription =
-                _normalizeText(doc.get('description').toString());
-            final venueMenu = _normalizeText(doc.get('menu').toString());
+      return snapshot.docs.where((doc) {
+        final venueName = _normalizeText(doc.get('name').toString());
+        final venueDescription =
+            _normalizeText(doc.get('description').toString());
+        final venueMenu = _normalizeText(doc.get('menu').toString());
 
-            // Check if any search term matches any field
-            return searchTerms.any((term) =>
-                venueName.contains(term) ||
-                venueDescription.contains(term) ||
-                venueMenu.contains(term));
-          })
-          .map((doc) => VenueModel.fromJson(doc.data(), doc.id))
-          .toList();
+        return searchTerms.any((term) =>
+            venueName.contains(term) ||
+            venueDescription.contains(term) ||
+            venueMenu.contains(term));
+      }).map((doc) {
+        Map<String, dynamic> data = doc.data();
+        data['isFavorite'] = favoriteVenues.contains(doc.id);
+        return VenueModel.fromJson(data, doc.id);
+      }).toList();
     });
   }
 
@@ -106,7 +116,8 @@ class FirestoreService {
       if (user != null) {
         DocumentSnapshot userDoc = await _usersRef.doc(user.uid).get();
         if (userDoc.exists) {
-          List<String> favoriteVenues = List<String>.from(userDoc.get('favoriteVenues') ?? []);
+          List<String> favoriteVenues =
+              List<String>.from(userDoc.get('favoriteVenues') ?? []);
           isFavorite = favoriteVenues.contains(venueId);
         }
       }
@@ -114,7 +125,7 @@ class FirestoreService {
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
       // Favori durumunu ekle
       data['isFavorite'] = isFavorite;
-      
+
       return VenueModel.fromJson(data, doc.id);
     } catch (e) {
       debugPrint('Error getting venue by ID: $e');

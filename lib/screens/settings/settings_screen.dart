@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/providers/theme_provider.dart';
+import 'package:campus_online/screens/auth/auth_services.dart';
 import 'package:campus_online/screens/auth/login_screen.dart';
 import 'package:campus_online/screens/admin/admin_panel_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -10,14 +13,19 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeProvider).isDarkMode;
-    final authService = ref.read(authServiceProvider);
-    final currentUser = authService.currentUser;
+    final currentUser = FirebaseAuth.instance.currentUser;
     final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text('Ayarlar'),
+        title: const Text(
+          'Ayarlar',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -118,7 +126,7 @@ class SettingsScreen extends ConsumerWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const LoginScreen()),
+                              builder: (context) => const SignIn()),
                         );
                       },
                       child: const Text('Giriş Yap'),
@@ -225,7 +233,16 @@ class SettingsScreen extends ConsumerWidget {
                             child: const Text('İptal'),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.pop(context, true),
+                            onPressed: () async {
+                              await AuthServices().signOut();
+                              await Navigator.pushAndRemoveUntil(
+                                context,
+                                CupertinoPageRoute(
+                                  builder: (context) => const SignIn(),
+                                ),
+                                (route) => false,
+                              );
+                            },
                             style: TextButton.styleFrom(
                               foregroundColor: theme.colorScheme.error,
                             ),
@@ -236,12 +253,12 @@ class SettingsScreen extends ConsumerWidget {
                     );
 
                     if (shouldLogout == true) {
-                      await authService.signOut();
+                      await AuthServices().signOut();
                       if (context.mounted) {
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const LoginScreen(),
+                            builder: (context) => const SignIn(),
                           ),
                           (route) => false,
                         );

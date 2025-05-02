@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/providers/venue_provider.dart';
 import 'package:campus_online/models/venue_model.dart';
+import 'package:campus_online/services/map_service.dart';
 
 class VenueDetailScreen extends ConsumerStatefulWidget {
   final String venueId;
@@ -33,6 +34,15 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
     } catch (e) {
       debugPrint('Error incrementing visit count: $e');
     }
+  }
+
+  Future<void> _launchMap(VenueModel venue) async {
+    await MapService.launchMap(
+      latitude: venue.latitude,
+      longitude: venue.longitude,
+      locationName: venue.name,
+      context: context,
+    );
   }
 
   @override
@@ -79,17 +89,53 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding:
-                            const EdgeInsets.only(left: 16, bottom: 8, top: 8),
-                        child: Text(
-                          venue.name,
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 28,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 16),
+                              child: Text(
+                                venue.name,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                          if (venue.latitude != null && venue.longitude != null)
+                            FilledButton.icon(
+                              onPressed: () => _launchMap(venue),
+                              icon: const Icon(Icons.directions),
+                              label: const Text('Git'),
+                            ),
+                        ],
+                      ),
+                      if (venue.location != null &&
+                          venue.location!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.place,
+                                size: 20,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  venue.location!,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
+                      ],
                       const SizedBox(height: 16),
                       if (venue.announcement != null &&
                           venue.announcement!.isNotEmpty) ...[

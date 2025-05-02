@@ -4,6 +4,8 @@ class VenueModel {
   final String id;
   final String name;
   final String? location;
+  final double? latitude; // Yeni eklenen alan
+  final double? longitude; // Yeni eklenen alan
   final String weekdayHours;
   final String weekendHours;
   final String? menu;
@@ -20,6 +22,8 @@ class VenueModel {
     required this.id,
     required this.name,
     this.location,
+    this.latitude, // Yeni eklenen alan
+    this.longitude, // Yeni eklenen alan
     required this.weekdayHours,
     required this.weekendHours,
     this.menu,
@@ -38,6 +42,8 @@ class VenueModel {
       id: id,
       name: json['name'] as String,
       location: json['location'] as String?,
+      latitude: (json['latitude'] as num?)?.toDouble(), // Yeni eklenen alan
+      longitude: (json['longitude'] as num?)?.toDouble(), // Yeni eklenen alan
       weekdayHours: json['weekdayHours'] as String? ?? '',
       weekendHours: json['weekendHours'] as String? ?? '',
       menu: json['menu'] as String?,
@@ -61,6 +67,8 @@ class VenueModel {
     return {
       'name': name,
       'location': location,
+      'latitude': latitude, // Yeni eklenen alan
+      'longitude': longitude, // Yeni eklenen alan
       'weekdayHours': weekdayHours,
       'weekendHours': weekendHours,
       'menu': menu,
@@ -79,6 +87,8 @@ class VenueModel {
     String? id,
     String? name,
     String? location,
+    double? latitude, // Yeni eklenen alan
+    double? longitude, // Yeni eklenen alan
     String? weekdayHours,
     String? weekendHours,
     String? menu,
@@ -95,6 +105,8 @@ class VenueModel {
       id: id ?? this.id,
       name: name ?? this.name,
       location: location ?? this.location,
+      latitude: latitude ?? this.latitude, // Yeni eklenen alan
+      longitude: longitude ?? this.longitude, // Yeni eklenen alan
       weekdayHours: weekdayHours ?? this.weekdayHours,
       weekendHours: weekendHours ?? this.weekendHours,
       menu: menu ?? this.menu,

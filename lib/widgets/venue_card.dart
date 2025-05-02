@@ -14,6 +14,8 @@ class VenueCard extends ConsumerStatefulWidget {
   final VoidCallback onTap;
   final String? weekendHours;
   final String? announcement;
+  final double? latitude;
+  final double? longitude;
 
   const VenueCard({
     super.key,
@@ -28,6 +30,8 @@ class VenueCard extends ConsumerStatefulWidget {
     required this.onTap,
     this.weekendHours,
     this.announcement,
+    this.latitude,
+    this.longitude,
   });
 
   @override

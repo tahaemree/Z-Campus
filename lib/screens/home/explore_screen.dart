@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/widgets/venue_card.dart';
 import 'package:campus_online/providers/venue_provider.dart';
 import 'package:campus_online/models/venue_model.dart';
-import 'package:campus_online/widgets/search_bar_widget.dart';
+import 'package:campus_online/widgets/home/search_bar_widget.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
@@ -274,6 +274,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 isFavorite: venue.isFavorite,
                 imageUrl: venue.imageUrl,
                 announcement: venue.announcement,
+                latitude: venue.latitude, // Yeni eklenen alan
+                longitude: venue.longitude, // Yeni eklenen alan
                 onFavoritePressed: () async {
                   await ref
                       .read(firestoreServiceProvider)

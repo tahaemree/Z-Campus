@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/screens/home/explore_screen.dart';
 import 'package:campus_online/screens/favorites/favorites_screen.dart';
 import 'package:campus_online/screens/settings/settings_screen.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:campus_online/services/firebase/auth_service.dart';
-
-final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -15,14 +12,8 @@ class MainScreen extends ConsumerStatefulWidget {
 }
 
 class _MainScreenState extends ConsumerState<MainScreen> {
-  late PageController _pageController;
   int _currentIndex = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController();
-  }
+  final PageController _pageController = PageController();
 
   @override
   void dispose() {
@@ -38,7 +29,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
-          setState(() => _currentIndex = index);
+          setState(() {
+            _currentIndex = index;
+          });
         },
         children: const [
           ExploreScreen(),
@@ -48,31 +41,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.shadow.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
           border: Border(
             top: BorderSide(
-              color: theme.colorScheme.outlineVariant.withOpacity(0.2),
-              width: 0.5,
+              color: theme.colorScheme.outline.withOpacity(0.2),
+              width: 1,
             ),
           ),
         ),
         child: NavigationBar(
-          height: 64,
+          height: 65,
           selectedIndex: _currentIndex,
-          backgroundColor: Colors.transparent,
-          indicatorColor: theme.colorScheme.primaryContainer.withOpacity(0.7),
-          shadowColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
-          elevation: 0,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          animationDuration: const Duration(milliseconds: 600),
           onDestinationSelected: (index) {
             _pageController.animateToPage(
               index,
@@ -80,13 +58,16 @@ class _MainScreenState extends ConsumerState<MainScreen> {
               curve: Curves.easeInOut,
             );
           },
+          backgroundColor: theme.colorScheme.surface,
+          elevation: 8,
+          shadowColor: theme.colorScheme.shadow.withOpacity(0.3),
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: theme.colorScheme.primaryContainer.withOpacity(0.7),
           destinations: [
             NavigationDestination(
               icon: Icon(
                 Icons.explore_outlined,
-                color: _currentIndex == 0
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               selectedIcon: Icon(
                 Icons.explore,
@@ -97,9 +78,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             NavigationDestination(
               icon: Icon(
                 Icons.favorite_outline,
-                color: _currentIndex == 1
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               selectedIcon: Icon(
                 Icons.favorite,
@@ -109,10 +88,8 @@ class _MainScreenState extends ConsumerState<MainScreen> {
             ),
             NavigationDestination(
               icon: Icon(
-                Icons.settings,
-                color: _currentIndex == 2
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
+                Icons.settings_outlined,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               selectedIcon: Icon(
                 Icons.settings,

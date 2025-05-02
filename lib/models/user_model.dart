@@ -4,6 +4,7 @@ class UserModel {
   final String displayName;
   final List<String> favoriteVenues;
   final List<String> recentSearches;
+  final List<String> recentlyViewed;
 
   const UserModel({
     required this.uid,
@@ -11,6 +12,7 @@ class UserModel {
     required this.displayName,
     this.favoriteVenues = const [],
     this.recentSearches = const [],
+    this.recentlyViewed = const [],
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
@@ -21,6 +23,8 @@ class UserModel {
             List<String>.from(json['favoriteVenues'] as List<dynamic>? ?? []),
         recentSearches:
             List<String>.from(json['recentSearches'] as List<dynamic>? ?? []),
+        recentlyViewed:
+            List<String>.from(json['recentlyViewed'] as List<dynamic>? ?? []),
       );
 
   Map<String, dynamic> toJson() => {
@@ -29,6 +33,7 @@ class UserModel {
         'displayName': displayName,
         'favoriteVenues': favoriteVenues,
         'recentSearches': recentSearches,
+        'recentlyViewed': recentlyViewed,
       };
 
   UserModel copyWith({
@@ -37,6 +42,7 @@ class UserModel {
     String? displayName,
     List<String>? favoriteVenues,
     List<String>? recentSearches,
+    List<String>? recentlyViewed,
   }) =>
       UserModel(
         uid: uid ?? this.uid,
@@ -44,5 +50,6 @@ class UserModel {
         displayName: displayName ?? this.displayName,
         favoriteVenues: favoriteVenues ?? this.favoriteVenues,
         recentSearches: recentSearches ?? this.recentSearches,
+        recentlyViewed: recentlyViewed ?? this.recentlyViewed,
       );
 }
