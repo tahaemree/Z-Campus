@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/providers/venue_provider.dart';
 import 'package:campus_online/models/venue_model.dart';
 import 'package:campus_online/services/map_service.dart';
+import 'package:transparent_image/transparent_image.dart';
 
 class VenueDetailScreen extends ConsumerStatefulWidget {
   final String venueId;
@@ -171,8 +172,9 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
         background: venue.imageUrl != null
-            ? Image.network(
-                venue.imageUrl!,
+            ? FadeInImage.memoryNetwork(
+                placeholder: kTransparentImage,
+                image: venue.imageUrl!,
                 fit: BoxFit.cover,
               )
             : Container(

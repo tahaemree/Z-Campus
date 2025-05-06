@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/providers/venue_provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class VenueCard extends ConsumerStatefulWidget {
   final String venueId;
@@ -237,16 +238,22 @@ class _VenueCardState extends ConsumerState<VenueCard> {
       child: widget.imageUrl != null
           ? ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: Image.network(
-                widget.imageUrl!,
+              child: CachedNetworkImage(
+                imageUrl: widget.imageUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    widget.venueIcon,
-                    color: theme.colorScheme.onSurfaceVariant,
-                    size: 32,
-                  );
-                },
+                placeholder: (context, url) => Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                errorWidget: (context, url, error) => Icon(
+                  widget.venueIcon,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  size: 32,
+                ),
               ),
             )
           : Icon(

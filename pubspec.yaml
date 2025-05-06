@@ -34,6 +34,7 @@ dependencies:
   fluttertoast: ^8.2.12
   url_launcher: ^6.3.1
   flutter_launcher_icons: ^0.14.3
+  transparent_image: ^2.0.1
 
 dev_dependencies:
   flutter_test:
@@ -45,12 +46,26 @@ dev_dependencies:
   json_serializable: ^6.9.4
   #url_launcher: ^6.3.1
 
+flutter_native_splash:
+  color: "#2c2f60"
+  image: lib/assets/app_acilis.png
+  android: true
+  ios: true
+  web: false # Web için açılış ekranını devre dışı bırakıyoruz
+
+  # Android 12 ve sonrası için özel ayarlar
+  android_12:
+    color: "#2c2f60"
+    image: lib/assets/app_acilis.png # Android 12 için ikon
+    # icon_background_color: "#2c2f60" # İkonun kendisi için bir arka plan gerekirse
+
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "lib/assets/campus_online_logo.png"
+  image_path: "lib/assets/campus-online_new-logo.jpeg"
 
 flutter:
   uses-material-design: true
   assets:
-    - lib/assets/campus_online_logo.png
+    - lib/assets/campus-online_new-logo.jpeg
+    - lib/assets/app_acilis.png
