@@ -13,11 +13,13 @@ class ExploreScreen extends ConsumerStatefulWidget {
 }
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode(); // FocusNode eklendi
   bool _showSearchBar = true;
   late AnimationController _animationController;
+  late TabController _tabController;
+  int _currentTabIndex = 0;
 
   @override
   void initState() {
@@ -28,6 +30,15 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       duration: const Duration(milliseconds: 700),
       vsync: this,
     );
+
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (_tabController.index != _currentTabIndex) {
+        setState(() {
+          _currentTabIndex = _tabController.index;
+        });
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -42,6 +53,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     _scrollController.dispose();
     _animationController.dispose();
     _focusNode.dispose(); // FocusNode'u dispose ediyoruz
+    _tabController.dispose();
     super.dispose();
   }
 
@@ -102,65 +114,94 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   ),
                 ),
               ),
+              bottom: searchQuery.isEmpty
+                  ? TabBar(
+                      controller: _tabController,
+                      tabs: const [
+                        Tab(text: 'Keşfet'),
+                        Tab(text: 'Tüm Mekanlar'),
+                      ],
+                    )
+                  : null,
             ),
             if (searchQuery.isEmpty) ...[
-              featuredVenuesAsync.when(
-                data: (featuredVenues) {
-                  if (featuredVenues.isEmpty) return const SliverToBoxAdapter();
-                  return SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                      child: Text(
-                        'Öne Çıkan Yerler',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+              if (_currentTabIndex == 0) ...[
+                featuredVenuesAsync.when(
+                  data: (featuredVenues) {
+                    if (featuredVenues.isEmpty)
+                      return const SliverToBoxAdapter();
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                        child: Text(
+                          'Öne Çıkan Yerler',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(),
-                error: (error, stack) => const SliverToBoxAdapter(),
-              ),
-              featuredVenuesAsync.when(
-                data: (featuredVenues) {
-                  if (featuredVenues.isEmpty) return const SliverToBoxAdapter();
-                  return _buildVenuesList(featuredVenues, theme);
-                },
-                loading: () => const SliverToBoxAdapter(),
-                error: (error, stack) => const SliverToBoxAdapter(),
-              ),
-              recentlyViewedVenuesAsync.when(
-                data: (recentlyViewedVenues) {
-                  if (recentlyViewedVenues.isEmpty) {
-                    return const SliverToBoxAdapter();
-                  }
-                  return SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                      child: Text(
-                        'Son Aranan Yerler',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
+                    );
+                  },
+                  loading: () => const SliverToBoxAdapter(),
+                  error: (error, stack) => const SliverToBoxAdapter(),
+                ),
+                featuredVenuesAsync.when(
+                  data: (featuredVenues) {
+                    if (featuredVenues.isEmpty)
+                      return const SliverToBoxAdapter();
+                    return _buildVenuesList(featuredVenues, theme);
+                  },
+                  loading: () =>
+                      const SliverToBoxAdapter(child: SizedBox.shrink()),
+                  error: (error, stack) => const SliverToBoxAdapter(),
+                ),
+                recentlyViewedVenuesAsync.when(
+                  data: (recentlyViewedVenues) {
+                    if (recentlyViewedVenues.isEmpty) {
+                      return const SliverToBoxAdapter();
+                    }
+                    return SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: Text(
+                          'Son Aranan Yerler',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(),
-                error: (error, stack) => const SliverToBoxAdapter(),
-              ),
-              recentlyViewedVenuesAsync.when(
-                data: (recentlyViewedVenues) {
-                  if (recentlyViewedVenues.isEmpty) {
-                    return const SliverToBoxAdapter();
-                  }
-                  return _buildVenuesList(recentlyViewedVenues, theme);
-                },
-                loading: () => const SliverToBoxAdapter(),
-                error: (error, stack) => const SliverToBoxAdapter(),
-              ),
-            ] else
+                    );
+                  },
+                  loading: () => const SliverToBoxAdapter(),
+                  error: (error, stack) => const SliverToBoxAdapter(),
+                ),
+                recentlyViewedVenuesAsync.when(
+                  data: (recentlyViewedVenues) {
+                    if (recentlyViewedVenues.isEmpty) {
+                      return const SliverToBoxAdapter();
+                    }
+                    return _buildVenuesList(recentlyViewedVenues, theme);
+                  },
+                  loading: () =>
+                      const SliverToBoxAdapter(child: SizedBox.shrink()),
+                  error: (error, stack) => const SliverToBoxAdapter(),
+                ),
+              ] else if (_currentTabIndex == 1) ...[
+                venuesAsync.when(
+                  data: (allVenues) {
+                    if (allVenues.isEmpty) return _buildEmptyState(theme);
+                    final sortedVenues = List<VenueModel>.from(allVenues);
+                    sortedVenues.sort((a, b) =>
+                        a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+                    return _buildVenuesList(sortedVenues, theme);
+                  },
+                  loading: () => const SliverFillRemaining(
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                  error: (error, stack) => _buildErrorState(error, theme),
+                ),
+              ],
+            ] else ...[
               venuesAsync.when(
                 data: (venues) {
                   if (venues.isEmpty) {
@@ -173,6 +214,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 ),
                 error: (error, stack) => _buildErrorState(error, theme),
               ),
+            ],
           ],
         ),
       ),

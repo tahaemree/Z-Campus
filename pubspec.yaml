@@ -69,3 +69,4 @@ flutter:
   assets:
     - lib/assets/campus-online_new-logo.jpeg
     - lib/assets/app_acilis.png
+    - lib/assets/venue_images/
