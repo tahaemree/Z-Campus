@@ -1,63 +1,59 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:campus_online/models/venue_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 
+/// Admin service with database-backed role checking.
+///
+/// Important: Server-side RLS policies must also enforce admin-only access
+/// on the `venues` table for INSERT, UPDATE, DELETE operations.
+/// Client-side checks alone are NOT sufficient for security.
 class AdminService {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final SupabaseClient _supabase = Supabase.instance.client;
 
-  // Get stream of venues
-  Stream<List<VenueModel>> getVenues() {
-    return _firestore.collection('venues').snapshots().map((snapshot) {
-      return snapshot.docs.map((doc) {
-        return VenueModel.fromJson(doc.data(), doc.id);
-      }).toList();
-    });
-  }
-
-  // Check if current user is admin
+  /// Checks if the current user has admin role.
+  ///
+  /// Uses user_metadata['role'] set during user creation/promotion.
+  /// The hardcoded email fallback is for backward compatibility only.
+  ///
+  /// TODO: Replace with a dedicated `user_roles` table + RLS for production.
   bool isAdmin() {
-    final user = _auth.currentUser;
-    return user != null &&
-        user.email == 'admin@example.com'; // TODO: Implement proper admin check
+    final user = _supabase.auth.currentUser;
+    if (user == null) return false;
+
+    final role = user.userMetadata?['role'];
+    if (role == 'admin') return true;
+
+    // Legacy fallback — remove once role-based system is fully in place
+    return user.email == 'admin@admin.com';
   }
 
-  // Check if venue exists by name and return its ID if it does
-  Future<String?> getVenueIdByName(String name) async {
-    final querySnapshot = await _firestore
-        .collection('venues')
-        .where('name', isEqualTo: name)
-        .limit(1)
-        .get();
-
-    if (querySnapshot.docs.isNotEmpty) {
-      return querySnapshot.docs.first.id;
-    }
-    return null;
-  }
-
-  // Add a new venue
+  /// Add a new venue (admin only).
   Future<void> addVenue(Map<String, dynamic> venueData) async {
     if (!isAdmin()) {
-      throw Exception('Yetkisiz erişim');
+      throw Exception('Bu işlem için yetkiniz bulunmamaktadır.');
     }
-    await _firestore.collection('venues').add(venueData);
+    await _supabase.from('venues').insert(venueData);
   }
 
-  // Update an existing venue
+  /// Update an existing venue (admin only).
   Future<void> updateVenue(
       String venueId, Map<String, dynamic> venueData) async {
     if (!isAdmin()) {
-      throw Exception('Yetkisiz erişim');
+      throw Exception('Bu işlem için yetkiniz bulunmamaktadır.');
     }
-    await _firestore.collection('venues').doc(venueId).update(venueData);
+    await _supabase.from('venues').update(venueData).eq('id', venueId);
   }
 
-  // Delete a venue
+  /// Delete a venue (admin only).
   Future<void> deleteVenue(String venueId) async {
     if (!isAdmin()) {
-      throw Exception('Yetkisiz erişim');
+      throw Exception('Bu işlem için yetkiniz bulunmamaktadır.');
     }
-    await _firestore.collection('venues').doc(venueId).delete();
+
+    try {
+      await _supabase.from('venues').delete().eq('id', venueId);
+    } catch (e) {
+      debugPrint('Error deleting venue: $e');
+      rethrow;
+    }
   }
 }

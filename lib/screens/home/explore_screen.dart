@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:campus_online/widgets/venue_card.dart';
 import 'package:campus_online/providers/venue_provider.dart';
+import 'package:campus_online/providers/venue_actions.dart';
+import 'package:campus_online/providers/search_state.dart';
 import 'package:campus_online/models/venue_model.dart';
+import 'package:campus_online/widgets/venue_list_sliver.dart';
 import 'package:campus_online/widgets/home/search_bar_widget.dart';
 
 class ExploreScreen extends ConsumerStatefulWidget {
@@ -15,22 +17,15 @@ class ExploreScreen extends ConsumerStatefulWidget {
 class _ExploreScreenState extends ConsumerState<ExploreScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
-  final FocusNode _focusNode = FocusNode(); // FocusNode eklendi
-  bool _showSearchBar = true;
-  late AnimationController _animationController;
+  final FocusNode _focusNode = FocusNode();
+  final TextEditingController _searchController = TextEditingController();
   late TabController _tabController;
   int _currentTabIndex = 0;
+  bool _isSearchActive = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 700),
-      vsync: this,
-    );
-
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index != _currentTabIndex) {
@@ -39,33 +34,21 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         });
       }
     });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _animationController.forward();
-      }
-    });
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _animationController.dispose();
-    _focusNode.dispose(); // FocusNode'u dispose ediyoruz
+    _focusNode.dispose();
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!mounted) return;
 
-    final show = _scrollController.position.pixels <= 50;
-    if (show != _showSearchBar) {
-      setState(() {
-        _showSearchBar = show;
-      });
-    }
+
+  void _handleVenueTap(String venueId) {
+    Navigator.pushNamed(context, '/venue_details', arguments: venueId);
   }
 
   @override
@@ -97,23 +80,58 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               snap: true,
               elevation: 2,
               backgroundColor: theme.scaffoldBackgroundColor,
-              toolbarHeight: 100,
+              toolbarHeight: _isSearchActive ? 75 : 65,
+              titleSpacing: _isSearchActive
+                  ? 0
+                  : NavigationToolbar.kMiddleSpacing,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   color: theme.scaffoldBackgroundColor,
                 ),
               ),
-              title: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: GestureDetector(
-                  onTapDown: (_) => _focusNode.unfocus(),
-                  child: SearchBarWidget(
-                    onSearch: (query) {
-                      ref.read(searchQueryProvider.notifier).state = query;
-                    },
+              leading: _isSearchActive
+                  ? IconButton(
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      onPressed: () {
+                        setState(() => _isSearchActive = false);
+                        _searchController.clear();
+                        ref.read(searchQueryProvider.notifier).state = '';
+                        _focusNode.unfocus();
+                      },
+                    )
+                  : null,
+              title: _isSearchActive
+                  ? Padding(
+                      padding: const EdgeInsets.only(
+                          right: 16.0, top: 8.0, bottom: 8.0),
+                      child: SearchBarWidget(
+                        controller: _searchController,
+                        autoFocus: true,
+                        onSearch: (query) {
+                          ref.read(searchQueryProvider.notifier).state =
+                              query;
+                        },
+                      ),
+                    )
+                  : Text(
+                      'Campus Online',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+              actions: [
+                if (!_isSearchActive)
+                  IconButton(
+                    icon: Icon(
+                      Icons.search_rounded,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    onPressed: () =>
+                        setState(() => _isSearchActive = true),
                   ),
-                ),
-              ),
+                if (!_isSearchActive) const SizedBox(width: 8),
+              ],
               bottom: searchQuery.isEmpty
                   ? TabBar(
                       controller: _tabController,
@@ -126,13 +144,16 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             ),
             if (searchQuery.isEmpty) ...[
               if (_currentTabIndex == 0) ...[
+                // Featured Venues Header
                 featuredVenuesAsync.when(
-                  data: (featuredVenues) {
-                    if (featuredVenues.isEmpty)
+                  data: (featured) {
+                    if (featured.isEmpty) {
                       return const SliverToBoxAdapter();
+                    }
                     return SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                        padding:
+                            const EdgeInsets.fromLTRB(16, 16, 16, 4),
                         child: Text(
                           'Öne Çıkan Yerler',
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -143,26 +164,33 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     );
                   },
                   loading: () => const SliverToBoxAdapter(),
-                  error: (error, stack) => const SliverToBoxAdapter(),
+                  error: (_, __) => const SliverToBoxAdapter(),
                 ),
+                // Featured Venues List
                 featuredVenuesAsync.when(
-                  data: (featuredVenues) {
-                    if (featuredVenues.isEmpty)
+                  data: (featured) {
+                    if (featured.isEmpty) {
                       return const SliverToBoxAdapter();
-                    return _buildVenuesList(featuredVenues, theme);
+                    }
+                    return VenueListSliver(
+                      venues: featured,
+                      onVenueTap: _handleVenueTap,
+                    );
                   },
                   loading: () =>
                       const SliverToBoxAdapter(child: SizedBox.shrink()),
-                  error: (error, stack) => const SliverToBoxAdapter(),
+                  error: (_, __) => const SliverToBoxAdapter(),
                 ),
+                // Recently Viewed Header
                 recentlyViewedVenuesAsync.when(
-                  data: (recentlyViewedVenues) {
-                    if (recentlyViewedVenues.isEmpty) {
+                  data: (recent) {
+                    if (recent.isEmpty) {
                       return const SliverToBoxAdapter();
                     }
                     return SliverToBoxAdapter(
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        padding:
+                            const EdgeInsets.fromLTRB(16, 8, 16, 8),
                         child: Text(
                           'Son Aranan Yerler',
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -173,173 +201,76 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     );
                   },
                   loading: () => const SliverToBoxAdapter(),
-                  error: (error, stack) => const SliverToBoxAdapter(),
+                  error: (_, __) => const SliverToBoxAdapter(),
                 ),
+                // Recently Viewed List
                 recentlyViewedVenuesAsync.when(
-                  data: (recentlyViewedVenues) {
-                    if (recentlyViewedVenues.isEmpty) {
+                  data: (recent) {
+                    if (recent.isEmpty) {
                       return const SliverToBoxAdapter();
                     }
-                    return _buildVenuesList(recentlyViewedVenues, theme);
+                    return VenueListSliver(
+                      venues: recent,
+                      onVenueTap: _handleVenueTap,
+                    );
                   },
                   loading: () =>
                       const SliverToBoxAdapter(child: SizedBox.shrink()),
-                  error: (error, stack) => const SliverToBoxAdapter(),
+                  error: (_, __) => const SliverToBoxAdapter(),
                 ),
               ] else if (_currentTabIndex == 1) ...[
                 venuesAsync.when(
                   data: (allVenues) {
-                    if (allVenues.isEmpty) return _buildEmptyState(theme);
+                    if (allVenues.isEmpty) {
+                      return const VenueEmptyState(
+                        icon: Icons.place,
+                        title: 'Henüz mekan eklenmemiş',
+                      );
+                    }
                     final sortedVenues = List<VenueModel>.from(allVenues);
-                    sortedVenues.sort((a, b) =>
-                        a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-                    return _buildVenuesList(sortedVenues, theme);
+                    sortedVenues.sort((a, b) => a.name
+                        .toLowerCase()
+                        .compareTo(b.name.toLowerCase()));
+                    return VenueListSliver(
+                      venues: sortedVenues,
+                      onVenueTap: _handleVenueTap,
+                    );
                   },
                   loading: () => const SliverFillRemaining(
                     child: Center(child: CircularProgressIndicator()),
                   ),
-                  error: (error, stack) => _buildErrorState(error, theme),
+                  error: (error, _) => VenueErrorState(
+                    error: error,
+                    title: 'Mekanlar yüklenemedi',
+                  ),
                 ),
               ],
             ] else ...[
               venuesAsync.when(
                 data: (venues) {
                   if (venues.isEmpty) {
-                    return _buildEmptyState(theme);
+                    return const VenueEmptyState(
+                      icon: Icons.search_off,
+                      title: 'Sonuç bulunamadı',
+                    );
                   }
-                  return _buildVenuesList(venues, theme);
+                  return VenueListSliver(
+                    venues: venues,
+                    onVenueTap: _handleVenueTap,
+                  );
                 },
                 loading: () => const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
                 ),
-                error: (error, stack) => _buildErrorState(error, theme),
+                error: (error, _) => VenueErrorState(
+                  error: error,
+                  title: 'Arama başarısız',
+                ),
               ),
             ],
           ],
         ),
       ),
-    );
-  }
-
-  SliverFillRemaining _buildEmptyState(ThemeData theme) {
-    return SliverFillRemaining(
-      hasScrollBody: false,
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.place,
-              size: 80,
-              color: theme.colorScheme.onSurfaceVariant.withAlpha(153),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Henüz mekan eklenmemiş',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  SliverFillRemaining _buildErrorState(Object error, ThemeData theme) {
-    return SliverFillRemaining(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline_rounded,
-              size: 64,
-              color: theme.colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Mekanlar yüklenemedi',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Text(
-                error.toString(),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  SliverList _buildVenuesList(List<VenueModel> venues, ThemeData theme) {
-    return SliverList(
-      delegate: SliverChildListDelegate([
-        const SizedBox(height: 16),
-        ...venues.map((venue) {
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: theme.shadowColor.withAlpha(26),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Hero(
-              tag: 'venue_card_${venue.id}',
-              child: VenueCard(
-                venueId: venue.id,
-                venueName: venue.name,
-                hours: venue.weekdayHours,
-                weekendHours:
-                    venue.weekendHours.isNotEmpty ? venue.weekendHours : null,
-                location: venue.location ?? '',
-                venueIcon: Icons.place,
-                isFavorite: venue.isFavorite,
-                imageUrl: venue.imageUrl,
-                announcement: venue.announcement,
-                latitude: venue.latitude, // Yeni eklenen alan
-                longitude: venue.longitude, // Yeni eklenen alan
-                onFavoritePressed: () async {
-                  await ref
-                      .read(firestoreServiceProvider)
-                      .toggleFavorite(venue.id);
-                  ref.invalidate(venuesProvider);
-                  ref.invalidate(featuredVenuesProvider);
-                  ref.invalidate(recentlyViewedVenuesProvider);
-                  ref.invalidate(favoriteVenuesProvider);
-                },
-                onTap: () {
-                  Navigator.pushNamed(
-                    context,
-                    '/venue_details',
-                    arguments: venue.id,
-                  );
-                },
-              ),
-            ),
-          );
-        }),
-        const SizedBox(height: 24),
-      ]),
     );
   }
 }

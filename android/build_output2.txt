@@ -1,0 +1,312 @@
+Starting a Gradle Daemon, 1 incompatible Daemon could not be reused, use --status for details
+> Task :gradle:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :gradle:pluginDescriptors
+> Task :gradle:processResources
+
+> Task :gradle:compileKotlin
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:11:37 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/FlutterPlugin.kt:609:69 'ApkVariant' is deprecated. Deprecated in Java
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:186:64 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+w: file:///C:/src/flutter/packages/flutter_tools/gradle/src/main/kotlin/plugins/PluginHandler.kt:187:69 Unchecked cast: NamedDomainObjectContainer<out BuildType> to NamedDomainObjectContainer<BuildType>
+
+> Task :gradle:compileJava NO-SOURCE
+> Task :gradle:compileGroovy NO-SOURCE
+> Task :gradle:classes
+> Task :gradle:jar
+> Task :app:DebugMinSdkCheck
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:compileFlutterBuildDebug
+> Task :app:packJniLibsflutterBuildDebug
+> Task :app_links:preBuild UP-TO-DATE
+> Task :app_links:preDebugBuild UP-TO-DATE
+> Task :flutter_native_splash:preBuild UP-TO-DATE
+> Task :flutter_native_splash:preDebugBuild UP-TO-DATE
+> Task :app_links:writeDebugAarMetadata
+> Task :path_provider_android:preBuild UP-TO-DATE
+> Task :flutter_native_splash:writeDebugAarMetadata
+> Task :path_provider_android:preDebugBuild UP-TO-DATE
+> Task :shared_preferences_android:preBuild UP-TO-DATE
+> Task :shared_preferences_android:preDebugBuild UP-TO-DATE
+> Task :path_provider_android:writeDebugAarMetadata
+> Task :sqflite_android:preBuild UP-TO-DATE
+> Task :shared_preferences_android:writeDebugAarMetadata
+> Task :sqflite_android:preDebugBuild UP-TO-DATE
+> Task :url_launcher_android:preBuild UP-TO-DATE
+> Task :url_launcher_android:preDebugBuild UP-TO-DATE
+> Task :sqflite_android:writeDebugAarMetadata
+> Task :url_launcher_android:writeDebugAarMetadata
+> Task :app:cleanMergeDebugAssets UP-TO-DATE
+> Task :app:checkDebugAarMetadata
+> Task :app:mergeDebugShaders
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app_links:mergeDebugShaders
+> Task :app_links:compileDebugShaders NO-SOURCE
+> Task :app_links:generateDebugAssets UP-TO-DATE
+> Task :app_links:mergeDebugAssets
+> Task :flutter_native_splash:mergeDebugShaders
+> Task :flutter_native_splash:compileDebugShaders NO-SOURCE
+> Task :flutter_native_splash:generateDebugAssets UP-TO-DATE
+> Task :flutter_native_splash:mergeDebugAssets
+> Task :path_provider_android:mergeDebugShaders
+> Task :path_provider_android:compileDebugShaders NO-SOURCE
+> Task :path_provider_android:generateDebugAssets UP-TO-DATE
+> Task :path_provider_android:mergeDebugAssets
+> Task :shared_preferences_android:mergeDebugShaders
+> Task :shared_preferences_android:compileDebugShaders NO-SOURCE
+> Task :shared_preferences_android:generateDebugAssets UP-TO-DATE
+> Task :shared_preferences_android:mergeDebugAssets
+> Task :sqflite_android:mergeDebugShaders
+> Task :sqflite_android:compileDebugShaders NO-SOURCE
+> Task :sqflite_android:generateDebugAssets UP-TO-DATE
+> Task :sqflite_android:mergeDebugAssets
+> Task :url_launcher_android:mergeDebugShaders
+> Task :url_launcher_android:compileDebugShaders NO-SOURCE
+> Task :url_launcher_android:generateDebugAssets UP-TO-DATE
+> Task :url_launcher_android:mergeDebugAssets
+> Task :app:mergeDebugAssets
+> Task :app:copyFlutterAssetsDebug
+> Task :app:generateDebugResValues
+> Task :app:processDebugGoogleServices
+> Task :app_links:generateDebugResValues
+> Task :app_links:generateDebugResources
+> Task :app_links:packageDebugResources
+> Task :flutter_native_splash:generateDebugResValues
+> Task :flutter_native_splash:generateDebugResources
+> Task :flutter_native_splash:packageDebugResources
+> Task :path_provider_android:generateDebugResValues
+> Task :path_provider_android:generateDebugResources
+> Task :path_provider_android:packageDebugResources
+> Task :shared_preferences_android:generateDebugResValues
+> Task :shared_preferences_android:generateDebugResources
+> Task :shared_preferences_android:packageDebugResources
+> Task :sqflite_android:generateDebugResValues
+> Task :sqflite_android:generateDebugResources
+> Task :sqflite_android:packageDebugResources
+> Task :url_launcher_android:generateDebugResValues
+> Task :url_launcher_android:generateDebugResources
+> Task :url_launcher_android:packageDebugResources
+> Task :app:mapDebugSourceSetPaths
+> Task :app:generateDebugResources
+> Task :app:packageDebugResources
+> Task :app:mergeDebugResources
+> Task :app:createDebugCompatibleScreenManifests
+> Task :app:extractDeepLinksDebug
+> Task :app_links:extractDeepLinksDebug
+> Task :flutter_native_splash:extractDeepLinksDebug
+> Task :path_provider_android:extractDeepLinksDebug
+> Task :shared_preferences_android:extractDeepLinksDebug
+> Task :app:parseDebugLocalResources
+> Task :sqflite_android:extractDeepLinksDebug
+
+> Task :shared_preferences_android:processDebugManifest
+package="io.flutter.plugins.sharedpreferences" found in source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.sharedpreferences" from the source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\shared_preferences_android-2.4.20\android\src\main\AndroidManifest.xml.
+
+> Task :path_provider_android:processDebugManifest
+package="io.flutter.plugins.pathprovider" found in source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_android-2.2.22\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.pathprovider" from the source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\path_provider_android-2.2.22\android\src\main\AndroidManifest.xml.
+
+> Task :flutter_native_splash:processDebugManifest
+package="net.jonhanson.flutter_native_splash" found in source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_native_splash-2.4.7\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="net.jonhanson.flutter_native_splash" from the source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\flutter_native_splash-2.4.7\android\src\main\AndroidManifest.xml.
+
+> Task :app_links:processDebugManifest
+package="com.llfbandit.app_links" found in source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\app_links-6.4.1\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.llfbandit.app_links" from the source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\app_links-6.4.1\android\src\main\AndroidManifest.xml.
+
+> Task :url_launcher_android:extractDeepLinksDebug
+
+> Task :sqflite_android:processDebugManifest
+package="com.tekartik.sqflite" found in source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\sqflite_android-2.4.2+2\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="com.tekartik.sqflite" from the source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\sqflite_android-2.4.2+2\android\src\main\AndroidManifest.xml.
+
+> Task :url_launcher_android:processDebugManifest
+package="io.flutter.plugins.urllauncher" found in source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_android-6.3.28\android\src\main\AndroidManifest.xml.
+Setting the namespace via the package attribute in the source AndroidManifest.xml is no longer supported, and the value is ignored.
+Recommendation: remove package="io.flutter.plugins.urllauncher" from the source AndroidManifest.xml: C:\Users\tahaemre\AppData\Local\Pub\Cache\hosted\pub.dev\url_launcher_android-6.3.28\android\src\main\AndroidManifest.xml.
+
+> Task :app_links:compileDebugLibraryResources
+> Task :app:processDebugMainManifest
+> Task :app:outputDebugAppLinkSettings
+> Task :app:processDebugManifest
+> Task :app_links:parseDebugLocalResources
+> Task :flutter_native_splash:compileDebugLibraryResources
+> Task :app_links:generateDebugRFile
+> Task :flutter_native_splash:parseDebugLocalResources
+> Task :path_provider_android:compileDebugLibraryResources
+> Task :path_provider_android:parseDebugLocalResources
+> Task :flutter_native_splash:generateDebugRFile
+> Task :path_provider_android:generateDebugRFile
+> Task :shared_preferences_android:compileDebugLibraryResources
+> Task :shared_preferences_android:parseDebugLocalResources
+> Task :sqflite_android:compileDebugLibraryResources
+> Task :shared_preferences_android:generateDebugRFile
+> Task :sqflite_android:parseDebugLocalResources
+> Task :url_launcher_android:compileDebugLibraryResources
+> Task :sqflite_android:generateDebugRFile
+> Task :url_launcher_android:parseDebugLocalResources
+> Task :app_links:javaPreCompileDebug
+> Task :url_launcher_android:generateDebugRFile
+> Task :app_links:compileDebugJavaWithJavac
+> Task :flutter_native_splash:javaPreCompileDebug
+> Task :path_provider_android:javaPreCompileDebug
+> Task :app_links:bundleLibCompileToJarDebug
+> Task :flutter_native_splash:compileDebugJavaWithJavac
+> Task :flutter_native_splash:bundleLibCompileToJarDebug
+> Task :path_provider_android:compileDebugJavaWithJavac
+> Task :shared_preferences_android:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :path_provider_android:bundleLibCompileToJarDebug
+> Task :shared_preferences_android:javaPreCompileDebug
+> Task :sqflite_android:javaPreCompileDebug
+> Task :url_launcher_android:generateDebugBuildConfig
+> Task :sqflite_android:compileDebugJavaWithJavac
+> Task :app:processDebugManifestForPackage
+> Task :sqflite_android:bundleLibCompileToJarDebug
+> Task :url_launcher_android:javaPreCompileDebug
+> Task :app:javaPreCompileDebug
+> Task :url_launcher_android:compileDebugJavaWithJavac
+> Task :url_launcher_android:bundleLibCompileToJarDebug
+> Task :app_links:processDebugJavaRes NO-SOURCE
+> Task :flutter_native_splash:processDebugJavaRes NO-SOURCE
+> Task :path_provider_android:processDebugJavaRes NO-SOURCE
+> Task :sqflite_android:processDebugJavaRes NO-SOURCE
+> Task :url_launcher_android:processDebugJavaRes NO-SOURCE
+> Task :app:processDebugResources
+> Task :app:compressDebugAssets
+> Task :shared_preferences_android:compileDebugKotlin
+> Task :app:checkDebugDuplicateClasses
+> Task :shared_preferences_android:compileDebugJavaWithJavac
+> Task :shared_preferences_android:processDebugJavaRes
+> Task :shared_preferences_android:bundleLibCompileToJarDebug
+> Task :app_links:bundleLibRuntimeToDirDebug
+> Task :flutter_native_splash:bundleLibRuntimeToDirDebug
+> Task :app:desugarDebugFileDependencies
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac
+> Task :app:processDebugJavaRes
+> Task :path_provider_android:bundleLibRuntimeToDirDebug
+> Task :app:mergeExtDexDebug
+> Task :url_launcher_android:bundleLibRuntimeToDirDebug
+> Task :sqflite_android:bundleLibRuntimeToDirDebug
+> Task :shared_preferences_android:bundleLibRuntimeToDirDebug
+> Task :app:dexBuilderDebug
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :app:configureCMakeDebug[arm64-v8a]
+> Task :app:buildCMakeDebug[arm64-v8a]
+> Task :app:mergeLibDexDebug
+> Task :app:configureCMakeDebug[armeabi-v7a]
+> Task :app:buildCMakeDebug[armeabi-v7a]
+> Task :app:configureCMakeDebug[x86_64]
+> Task :app:buildCMakeDebug[x86_64]
+> Task :app:mergeDebugJniLibFolders
+> Task :app_links:mergeDebugJniLibFolders
+> Task :app_links:mergeDebugNativeLibs NO-SOURCE
+> Task :app_links:copyDebugJniLibsProjectOnly
+> Task :flutter_native_splash:mergeDebugJniLibFolders
+> Task :flutter_native_splash:mergeDebugNativeLibs NO-SOURCE
+> Task :flutter_native_splash:copyDebugJniLibsProjectOnly
+> Task :path_provider_android:mergeDebugJniLibFolders
+> Task :path_provider_android:mergeDebugNativeLibs NO-SOURCE
+> Task :path_provider_android:copyDebugJniLibsProjectOnly
+> Task :shared_preferences_android:mergeDebugJniLibFolders
+> Task :shared_preferences_android:mergeDebugNativeLibs NO-SOURCE
+> Task :shared_preferences_android:copyDebugJniLibsProjectOnly
+> Task :sqflite_android:mergeDebugJniLibFolders
+> Task :sqflite_android:mergeDebugNativeLibs NO-SOURCE
+> Task :sqflite_android:copyDebugJniLibsProjectOnly
+> Task :url_launcher_android:mergeDebugJniLibFolders
+> Task :url_launcher_android:mergeDebugNativeLibs NO-SOURCE
+> Task :url_launcher_android:copyDebugJniLibsProjectOnly
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :app_links:stripDebugDebugSymbols NO-SOURCE
+> Task :app_links:copyDebugJniLibsProjectAndLocalJars
+> Task :app:mergeDebugNativeLibs
+> Task :app_links:extractDebugAnnotations
+> Task :app_links:extractDeepLinksForAarDebug
+> Task :app_links:mergeDebugGeneratedProguardFiles
+> Task :app_links:mergeDebugConsumerProguardFiles
+> Task :app_links:prepareDebugArtProfile
+> Task :app_links:prepareLintJarForPublish
+> Task :flutter_native_splash:stripDebugDebugSymbols NO-SOURCE
+> Task :app_links:mergeDebugJavaResource
+> Task :flutter_native_splash:copyDebugJniLibsProjectAndLocalJars
+> Task :app_links:syncDebugLibJars
+> Task :app_links:bundleDebugAar
+> Task :app_links:assembleDebug
+> Task :flutter_native_splash:extractDebugAnnotations
+> Task :flutter_native_splash:extractDeepLinksForAarDebug
+> Task :flutter_native_splash:mergeDebugGeneratedProguardFiles
+> Task :flutter_native_splash:mergeDebugConsumerProguardFiles
+> Task :flutter_native_splash:prepareDebugArtProfile
+> Task :flutter_native_splash:prepareLintJarForPublish
+> Task :path_provider_android:stripDebugDebugSymbols NO-SOURCE
+> Task :flutter_native_splash:mergeDebugJavaResource
+> Task :path_provider_android:copyDebugJniLibsProjectAndLocalJars
+> Task :path_provider_android:extractDebugAnnotations
+> Task :flutter_native_splash:syncDebugLibJars
+> Task :flutter_native_splash:bundleDebugAar
+> Task :flutter_native_splash:assembleDebug
+> Task :path_provider_android:extractDeepLinksForAarDebug
+> Task :path_provider_android:mergeDebugGeneratedProguardFiles
+> Task :path_provider_android:mergeDebugConsumerProguardFiles
+> Task :path_provider_android:prepareDebugArtProfile
+> Task :path_provider_android:prepareLintJarForPublish
+> Task :shared_preferences_android:stripDebugDebugSymbols NO-SOURCE
+> Task :path_provider_android:mergeDebugJavaResource
+> Task :shared_preferences_android:copyDebugJniLibsProjectAndLocalJars
+> Task :path_provider_android:syncDebugLibJars
+> Task :path_provider_android:bundleDebugAar
+> Task :path_provider_android:assembleDebug
+> Task :shared_preferences_android:extractDebugAnnotations
+> Task :shared_preferences_android:extractDeepLinksForAarDebug
+> Task :shared_preferences_android:mergeDebugGeneratedProguardFiles
+> Task :shared_preferences_android:mergeDebugConsumerProguardFiles
+> Task :shared_preferences_android:prepareDebugArtProfile
+> Task :shared_preferences_android:prepareLintJarForPublish
+> Task :sqflite_android:stripDebugDebugSymbols NO-SOURCE
+> Task :sqflite_android:copyDebugJniLibsProjectAndLocalJars
+> Task :shared_preferences_android:mergeDebugJavaResource
+> Task :sqflite_android:extractDebugAnnotations
+> Task :shared_preferences_android:syncDebugLibJars
+> Task :shared_preferences_android:bundleDebugAar
+> Task :shared_preferences_android:assembleDebug
+> Task :sqflite_android:extractDeepLinksForAarDebug
+> Task :sqflite_android:mergeDebugGeneratedProguardFiles
+> Task :sqflite_android:mergeDebugConsumerProguardFiles
+> Task :sqflite_android:prepareDebugArtProfile
+> Task :sqflite_android:prepareLintJarForPublish
+> Task :url_launcher_android:stripDebugDebugSymbols NO-SOURCE
+> Task :sqflite_android:mergeDebugJavaResource
+> Task :url_launcher_android:copyDebugJniLibsProjectAndLocalJars
+> Task :sqflite_android:syncDebugLibJars
+> Task :sqflite_android:bundleDebugAar
+> Task :sqflite_android:assembleDebug
+> Task :url_launcher_android:extractDebugAnnotations
+> Task :url_launcher_android:extractDeepLinksForAarDebug
+> Task :url_launcher_android:mergeDebugGeneratedProguardFiles
+> Task :url_launcher_android:mergeDebugConsumerProguardFiles
+> Task :url_launcher_android:prepareDebugArtProfile
+> Task :url_launcher_android:prepareLintJarForPublish
+> Task :url_launcher_android:mergeDebugJavaResource
+> Task :url_launcher_android:syncDebugLibJars
+> Task :url_launcher_android:bundleDebugAar
+> Task :url_launcher_android:assembleDebug
+> Task :app:stripDebugDebugSymbols
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 3m 50s
+218 actionable tasks: 217 executed, 1 up-to-date

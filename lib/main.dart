@@ -1,22 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:campus_online/providers/theme_provider.dart'; // Add this import
-import 'package:campus_online/firebase_options.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:campus_online/config/env_config.dart';
+import 'package:campus_online/providers/theme_provider.dart';
+import 'package:campus_online/providers/venue_provider.dart';
 import 'package:campus_online/screens/venue_detail/venue_detail_screen.dart';
 import 'package:campus_online/screens/settings/legal_screens.dart';
 import 'package:campus_online/screens/settings/profile_screen.dart';
 import 'package:campus_online/screens/auth/login_screen.dart';
 import 'package:campus_online/screens/navi_bar.dart';
+import 'package:campus_online/config/theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
-  // Initialize and load theme
+  try {
+    await Supabase.initialize(
+      url: EnvConfig.supabaseUrl,
+      anonKey: EnvConfig.supabaseAnonKey,
+    );
+    debugPrint('Supabase initialized successfully');
+  } catch (e) {
+    debugPrint('Initialization failed: $e');
+  }
+
   final themeNotifier = ThemeNotifier();
   await themeNotifier.loadTheme();
 
@@ -33,30 +40,52 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final auth = FirebaseAuth.instance;
     final isDarkMode = ref.watch(themeProvider).isDarkMode;
+    // Watch auth state stream so UI reacts to login/logout/token changes
+    final authAsync = ref.watch(authStateProvider);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFF2c2f60)),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Color(0xFF2c2f60),
-          brightness: Brightness.dark,
-        ),
-      ),
+      title: 'Campus Online',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: auth.currentUser != null ? const MainScreen() : const SignIn(),
-      routes: {
-        '/venue_details': (context) => VenueDetailScreen(
-              venueId: ModalRoute.of(context)!.settings.arguments as String,
-            ),
-        '/privacy_policy': (context) => const PrivacyPolicyScreen(),
-        '/terms_of_service': (context) => const TermsOfServiceScreen(),
-        '/profile': (context) => const ProfileScreen(),
+      home: authAsync.when(
+        data: (_) {
+          // Check current session after any auth state change
+          final session = Supabase.instance.client.auth.currentSession;
+          return session != null ? const MainScreen() : const SignIn();
+        },
+        loading: () => const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        ),
+        error: (_, __) => const SignIn(),
+      ),
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/venue_details':
+            final venueId = settings.arguments as String?;
+            if (venueId == null || venueId.isEmpty) {
+              return MaterialPageRoute(
+                builder: (_) => const Scaffold(
+                  body: Center(child: Text('Invalid venue ID')),
+                ),
+              );
+            }
+            return MaterialPageRoute(
+              builder: (_) => VenueDetailScreen(venueId: venueId),
+            );
+          case '/privacy_policy':
+            return MaterialPageRoute(
+                builder: (_) => const PrivacyPolicyScreen());
+          case '/terms_of_service':
+            return MaterialPageRoute(
+                builder: (_) => const TermsOfServiceScreen());
+          case '/profile':
+            return MaterialPageRoute(builder: (_) => const ProfileScreen());
+          default:
+            return null;
+        }
       },
     );
   }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:campus_online/services/firebase/firestore_service.dart';
+import 'package:campus_online/services/admin_service.dart';
 import 'package:campus_online/models/venue_model.dart';
 import 'package:campus_online/providers/venue_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:campus_online/providers/venue_actions.dart';
 
 class AdminPanelScreen extends ConsumerStatefulWidget {
   const AdminPanelScreen({super.key});
@@ -13,7 +13,7 @@ class AdminPanelScreen extends ConsumerStatefulWidget {
 }
 
 class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
+  final AdminService _adminService = AdminService();
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _locationController = TextEditingController();
@@ -27,7 +27,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   final _imageUrlController = TextEditingController();
   bool _isEditing = false;
   String? _editingVenueId;
-  final bool _isLoading = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -47,49 +47,52 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   Future<void> _addVenue() async {
     if (!_formKey.currentState!.validate()) return;
 
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final venue = VenueModel(
-        id: _editingVenueId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: _nameController.text,
-        location:
-            _locationController.text.isEmpty ? null : _locationController.text,
-        latitude: _latitudeController.text.isEmpty
+      final venueData = {
+        'name': _nameController.text,
+        'location': _locationController.text.isEmpty
             ? null
-            : double.parse(_latitudeController.text),
-        longitude: _longitudeController.text.isEmpty
+            : _locationController.text,
+        'latitude': _latitudeController.text.isEmpty
             ? null
-            : double.parse(_longitudeController.text),
-        weekdayHours: _weekdayHoursController.text,
-        weekendHours: _weekendHoursController.text,
-        menu: _menuController.text.isEmpty ? null : _menuController.text,
-        description: _descriptionController.text.isEmpty
+            : double.tryParse(_latitudeController.text),
+        'longitude': _longitudeController.text.isEmpty
+            ? null
+            : double.tryParse(_longitudeController.text),
+        'hours': _weekdayHoursController.text,
+        'weekend_hours': _weekendHoursController.text,
+        'menu':
+            _menuController.text.isEmpty ? null : _menuController.text,
+        'description': _descriptionController.text.isEmpty
             ? null
             : _descriptionController.text,
-        announcement: _announcementController.text.isEmpty
+        'announcement': _announcementController.text.isEmpty
             ? null
             : _announcementController.text,
-        imageUrl:
-            _imageUrlController.text.isEmpty ? null : _imageUrlController.text,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        isFavorite: false,
-        amenities: [],
-        visitCount: 0,
-      );
+        'image_url': _imageUrlController.text.isEmpty
+            ? null
+            : _imageUrlController.text,
+      };
 
       if (_isEditing && _editingVenueId != null) {
-        await _firestoreService.updateVenue(venue);
+        await _adminService.updateVenue(_editingVenueId!, venueData);
         ref.invalidate(venueByIdProvider(_editingVenueId!));
-        clearVenuesCache(ref);
       } else {
-        await _firestoreService.addVenue(venue);
-        clearVenuesCache(ref);
+        await _adminService.addVenue(venueData);
       }
+
+      clearVenuesCache(ref);
+      ref.invalidate(venuesProvider);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditing ? 'Mekan güncellendi' : 'Mekan eklendi'),
+            content:
+                Text(_isEditing ? 'Mekan güncellendi' : 'Mekan eklendi'),
             backgroundColor: Colors.green,
           ),
         );
@@ -104,6 +107,12 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -112,7 +121,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Mekanı Sil'),
-        content: const Text('Bu mekanı silmek istediğinize emin misiniz?'),
+        content:
+            const Text('Bu mekanı silmek istediğinize emin misiniz?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -128,7 +138,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
 
     if (confirmed == true) {
       try {
-        await _firestoreService.deleteVenue(venueId);
+        await _adminService.deleteVenue(venueId);
+        clearVenuesCache(ref);
+        ref.invalidate(venuesProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -157,7 +169,7 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
       _locationController.text = venue.location ?? '';
       _latitudeController.text = venue.latitude?.toString() ?? '';
       _longitudeController.text = venue.longitude?.toString() ?? '';
-      _weekdayHoursController.text = venue.weekdayHours;
+      _weekdayHoursController.text = venue.hours;
       _weekendHoursController.text = venue.weekendHours;
       _menuController.text = venue.menu ?? '';
       _descriptionController.text = venue.description ?? '';
@@ -204,9 +216,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   const SizedBox(width: 8),
                   Text(
                     'Mekan Listesi',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style:
+                        Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                   ),
                 ],
               ),
@@ -219,26 +232,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
   }
 
   Widget _buildVenuesList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _firestoreService.getVenuesStream(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(
-            child: Text('Hata: ${snapshot.error}'),
-          );
-        }
+    final venuesAsync = ref.watch(venuesProvider);
 
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-
-        final venues = snapshot.data!.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          return VenueModel.fromJson(data, doc.id);
-        }).toList();
-
+    return venuesAsync.when(
+      data: (venues) {
         if (venues.isEmpty) {
           return const Padding(
             padding: EdgeInsets.all(32),
@@ -269,7 +266,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   children: [
                     const SizedBox(height: 4),
                     Text(venue.location ?? '',
-                        maxLines: 1, overflow: TextOverflow.ellipsis),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
                   ],
                 ),
                 isThreeLine: true,
@@ -280,10 +278,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                       icon: const Icon(Icons.edit),
                       onPressed: () {
                         _editVenue(venue);
-                        // Scroll to top to show the form
                         Scrollable.ensureVisible(
                           _formKey.currentContext!,
-                          duration: const Duration(milliseconds: 500),
+                          duration:
+                              const Duration(milliseconds: 500),
                         );
                       },
                     ),
@@ -299,6 +297,14 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
           },
         );
       },
+      loading: () => const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Padding(
+        padding: const EdgeInsets.all(32),
+        child: Center(child: Text('Hata: $error')),
+      ),
     );
   }
 
@@ -320,7 +326,10 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                 const SizedBox(width: 8),
                 Text(
                   _isEditing ? 'Mekan Düzenle' : 'Yeni Mekan Ekle',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                 ),
@@ -355,7 +364,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   child: TextFormField(
                     controller: _latitudeController,
                     keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                        const TextInputType.numberWithOptions(
+                            decimal: true),
                     decoration: const InputDecoration(
                       labelText: 'Enlem (Opsiyonel)',
                       border: OutlineInputBorder(),
@@ -363,13 +373,9 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                     ),
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
-                        try {
-                          double lat = double.parse(value);
-                          if (lat < -90 || lat > 90) {
-                            return 'Enlem -90 ile 90 arasında olmalıdır';
-                          }
-                        } catch (e) {
-                          return 'Geçerli bir sayı girin';
+                        final lat = double.tryParse(value);
+                        if (lat == null || lat < -90 || lat > 90) {
+                          return 'Geçerli bir enlem girin (-90..90)';
                         }
                       }
                       return null;
@@ -381,7 +387,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   child: TextFormField(
                     controller: _longitudeController,
                     keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
+                        const TextInputType.numberWithOptions(
+                            decimal: true),
                     decoration: const InputDecoration(
                       labelText: 'Boylam (Opsiyonel)',
                       border: OutlineInputBorder(),
@@ -389,13 +396,11 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                     ),
                     validator: (value) {
                       if (value != null && value.isNotEmpty) {
-                        try {
-                          double lon = double.parse(value);
-                          if (lon < -180 || lon > 180) {
-                            return 'Boylam -180 ile 180 arasında olmalıdır';
-                          }
-                        } catch (e) {
-                          return 'Geçerli bir sayı girin';
+                        final lon = double.tryParse(value);
+                        if (lon == null ||
+                            lon < -180 ||
+                            lon > 180) {
+                          return 'Geçerli bir boylam girin (-180..180)';
                         }
                       }
                       return null;
@@ -470,16 +475,20 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _isLoading ? null : _addVenue,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 16),
                     ),
                     icon: _isLoading
                         ? const SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2),
                           )
-                        : Icon(_isEditing ? Icons.save : Icons.add),
-                    label: Text(_isEditing ? 'Güncelle' : 'Ekle'),
+                        : Icon(
+                            _isEditing ? Icons.save : Icons.add),
+                    label:
+                        Text(_isEditing ? 'Güncelle' : 'Ekle'),
                   ),
                 ),
                 if (_isEditing) ...[
@@ -488,7 +497,8 @@ class _AdminPanelScreenState extends ConsumerState<AdminPanelScreen> {
                     child: OutlinedButton.icon(
                       onPressed: _clearForm,
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16),
                       ),
                       icon: const Icon(Icons.cancel),
                       label: const Text('İptal'),

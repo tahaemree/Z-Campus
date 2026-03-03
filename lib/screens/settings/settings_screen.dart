@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:campus_online/providers/theme_provider.dart';
 import 'package:campus_online/screens/auth/auth_services.dart';
-import 'package:campus_online/screens/auth/login_screen.dart';
 import 'package:campus_online/screens/admin/admin_panel_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:campus_online/commons/app_error.dart';
+import 'package:campus_online/services/admin_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -13,8 +13,17 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkMode = ref.watch(themeProvider).isDarkMode;
-    final currentUser = FirebaseAuth.instance.currentUser;
+    final currentUser = Supabase.instance.client.auth.currentUser;
     final theme = Theme.of(context);
+
+    final String displayName =
+        currentUser?.userMetadata?['display_name'] ?? 'İsimsiz Kullanıcı';
+    final String photoUrl =
+        currentUser?.userMetadata?['avatar_url'] ?? '';
+
+    // Use AdminService for consistent admin check
+    final adminService = AdminService();
+    final isAdmin = adminService.isAdmin();
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
@@ -32,12 +41,10 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // PROFIL BOLUMU
+          // PROFILE SECTION
           if (currentUser != null) ...[
             GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(context, '/profile');
-              },
+              onTap: () => Navigator.pushNamed(context, '/profile'),
               child: Container(
                 margin: const EdgeInsets.only(bottom: 16),
                 padding: const EdgeInsets.all(16),
@@ -46,7 +53,7 @@ class SettingsScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.shadowColor.withOpacity(0.05),
+                      color: theme.shadowColor.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -57,12 +64,10 @@ class SettingsScreen extends ConsumerWidget {
                     CircleAvatar(
                       radius: 36,
                       backgroundColor: theme.colorScheme.primaryContainer,
-                      backgroundImage: currentUser.photoURL != null &&
-                              currentUser.photoURL!.isNotEmpty
-                          ? NetworkImage(currentUser.photoURL!)
+                      backgroundImage: photoUrl.isNotEmpty
+                          ? NetworkImage(photoUrl)
                           : null,
-                      child: currentUser.photoURL == null ||
-                              currentUser.photoURL!.isEmpty
+                      child: photoUrl.isEmpty
                           ? Icon(Icons.person,
                               size: 36,
                               color: theme.colorScheme.onPrimaryContainer)
@@ -74,7 +79,7 @@ class SettingsScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            currentUser.displayName ?? 'İsimsiz Kullanıcı',
+                            displayName,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
@@ -120,16 +125,6 @@ class SettingsScreen extends ConsumerWidget {
                         'Giriş yapmadınız',
                         style: theme.textTheme.titleMedium,
                       ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const SignIn()),
-                        );
-                      },
-                      child: const Text('Giriş Yap'),
                     ),
                   ],
                 ),
@@ -180,8 +175,7 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          if (currentUser != null &&
-              currentUser.email == 'admin@admin.com') ...[
+          if (isAdmin) ...[
             const SizedBox(height: 16),
             _buildSection(
               title: 'Yönetim',
@@ -206,7 +200,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
           if (currentUser != null) ...[
             const SizedBox(height: 16),
-            _buildDivider(),
+            const Divider(height: 1, thickness: 1),
             const SizedBox(height: 8),
             _buildSection(
               title: 'Hesap',
@@ -219,52 +213,7 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                   title: 'Çıkış Yap',
                   titleColor: theme.colorScheme.error,
-                  onTap: () async {
-                    // Çıkış yapmadan önce onay al
-                    final shouldLogout = await showDialog<bool>(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Çıkış Yap'),
-                        content: const Text(
-                            'Çıkış yapmak istediğinize emin misiniz?'),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context, false),
-                            child: const Text('İptal'),
-                          ),
-                          TextButton(
-                            onPressed: () async {
-                              await AuthServices().signOut();
-                              await Navigator.pushAndRemoveUntil(
-                                context,
-                                CupertinoPageRoute(
-                                  builder: (context) => const SignIn(),
-                                ),
-                                (route) => false,
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              foregroundColor: theme.colorScheme.error,
-                            ),
-                            child: const Text('Çıkış Yap'),
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (shouldLogout == true) {
-                      await AuthServices().signOut();
-                      if (context.mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SignIn(),
-                          ),
-                          (route) => false,
-                        );
-                      }
-                    }
-                  },
+                  onTap: () => _handleLogout(context, theme),
                 ),
               ],
             ),
@@ -273,6 +222,44 @@ class SettingsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleLogout(BuildContext context, ThemeData theme) async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Çıkış Yap'),
+        content:
+            const Text('Çıkış yapmak istediğinize emin misiniz?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('İptal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
+            child: const Text('Çıkış Yap'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLogout == true) {
+      try {
+        await AuthServices().signOut();
+        // Auth state change handled by main.dart's authStateProvider
+      } catch (e) {
+        if (context.mounted) {
+          AppError.showError(
+            context,
+            AppError.getUserFriendlyMessage(e),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildSection({
@@ -330,13 +317,6 @@ class SettingsScreen extends ConsumerWidget {
       trailing:
           trailing ?? (showChevron ? const Icon(Icons.chevron_right) : null),
       onTap: onTap,
-    );
-  }
-
-  Widget _buildDivider() {
-    return const Divider(
-      height: 1,
-      thickness: 1,
     );
   }
 }

@@ -43,7 +43,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.2),
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -60,9 +60,10 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           },
           backgroundColor: theme.colorScheme.surface,
           elevation: 8,
-          shadowColor: theme.colorScheme.shadow.withOpacity(0.3),
+          shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.3),
           surfaceTintColor: Colors.transparent,
-          indicatorColor: theme.colorScheme.primaryContainer.withOpacity(0.7),
+          indicatorColor:
+              theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
           destinations: [
             NavigationDestination(
               icon: Icon(

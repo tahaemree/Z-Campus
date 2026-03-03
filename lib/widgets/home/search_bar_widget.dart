@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 
 class SearchBarWidget extends StatefulWidget {
   final Function(String) onSearch;
+  final bool autoFocus;
+  final TextEditingController? controller;
 
   const SearchBarWidget({
     super.key,
     required this.onSearch,
+    this.autoFocus = false,
+    this.controller,
   });
 
   @override
@@ -14,42 +18,35 @@ class SearchBarWidget extends StatefulWidget {
 }
 
 class _SearchBarWidgetState extends State<SearchBarWidget> {
-  final TextEditingController _controller = TextEditingController();
+  late TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
   String _query = '';
   Timer? _debounceTimer;
+  bool _ownsController = false;
 
   static const Duration _debounceDuration = Duration(milliseconds: 300);
 
   @override
   void initState() {
     super.initState();
-    _setupUnfocusListener();
-  }
-
-  void _setupUnfocusListener() {
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus) {
-        _clearSearch();
-      }
-    });
+    if (widget.controller != null) {
+      _controller = widget.controller!;
+    } else {
+      _controller = TextEditingController();
+      _ownsController = true;
+    }
+    _query = _controller.text;
   }
 
   void _clearSearch() {
     if (!mounted) return;
-    setState(() {
-      _query = '';
-      _controller.clear();
-    });
+    setState(() { _query = ''; _controller.clear(); });
     widget.onSearch('');
   }
 
   void _handleSearch(String value) {
     if (!mounted) return;
-    setState(() {
-      _query = value.trim();
-    });
-
+    setState(() { _query = value.trim(); });
     _debounceTimer?.cancel();
     _debounceTimer = Timer(_debounceDuration, () {
       widget.onSearch(_query);
@@ -58,7 +55,7 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
 
   @override
   void dispose() {
-    _controller.dispose();
+    if (_ownsController) _controller.dispose();
     _focusNode.dispose();
     _debounceTimer?.cancel();
     super.dispose();
@@ -66,70 +63,49 @@ class _SearchBarWidgetState extends State<SearchBarWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        if (_focusNode.hasFocus) {
-          _focusNode.unfocus();
-        }
-      },
-      behavior: HitTestBehavior.translucent,
-      child: SearchBar(
-        focusNode: _focusNode,
-        padding: const WidgetStatePropertyAll(
-            EdgeInsets.symmetric(horizontal: 16, vertical: 8)),
-        controller: _controller,
-        onChanged: _handleSearch,
-        hintText: 'Ara...',
-        leading: const Icon(Icons.search),
-        trailing: [
-          if (_query.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.clear),
-              onPressed: _clearSearch,
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05), width: 1),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 4))],
+      ),
+      child: Center(
+        child: TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          autofocus: widget.autoFocus,
+          onChanged: _handleSearch,
+          style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+          decoration: InputDecoration(
+            hintText: 'Kampüste mekan veya etkinlik ara...',
+            hintStyle: TextStyle(color: isDark ? Colors.white.withValues(alpha: 0.5) : Colors.black.withValues(alpha: 0.4), fontSize: 15),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Icon(Icons.search_rounded, color: isDark ? Colors.white.withValues(alpha: 0.7) : theme.colorScheme.primary.withValues(alpha: 0.8), size: 24),
             ),
-        ],
+            prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            suffixIcon: _query.isNotEmpty
+                ? IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.1), shape: BoxShape.circle),
+                      child: Icon(Icons.close_rounded, size: 16, color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black.withValues(alpha: 0.6)),
+                    ),
+                    onPressed: _clearSearch,
+                  )
+                : null,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+            filled: false,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          ),
+        ),
       ),
     );
-  }
-}
-
-class CustomSearchDelegate extends SearchDelegate<String> {
-  final Function(String) onSearch;
-
-  CustomSearchDelegate({required this.onSearch});
-
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: const Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-          onSearch('');
-          close(context, '');
-        },
-      ),
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: const Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, '');
-      },
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    onSearch(query);
-    return Container();
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return Container();
   }
 }

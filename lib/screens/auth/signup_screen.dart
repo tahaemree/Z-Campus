@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:campus_online/commnents/custom_keys.dart';
-import 'package:campus_online/screens/auth/login_screen.dart';
+import 'package:campus_online/commons/custom_keys.dart';
+import 'package:campus_online/commons/app_error.dart';
 import 'package:campus_online/screens/auth/auth_services.dart';
+import 'package:campus_online/widgets/auth/auth_scaffold.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -12,142 +12,158 @@ class SignUp extends StatefulWidget {
 }
 
 class _SignUpState extends State<SignUp> {
-  TextEditingController userController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
+  final TextEditingController userController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
   final AuthServices _services = AuthServices();
   bool _isObscure = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    userController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSignUp() async {
+    final String username = userController.text.trim();
+    final String email = emailController.text.trim();
+    final String password = passwordController.text;
+
+    if (username.isEmpty) {
+      AppError.showError(context, 'Kullanıcı adı gerekli');
+      return;
+    }
+
+    if (email.isEmpty || !email.contains('@')) {
+      AppError.showError(context, 'Geçerli bir email adresi girin');
+      return;
+    }
+
+    if (password.length < 6) {
+      AppError.showError(context, 'Şifre en az 6 karakter olmalı');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _services.signUp(username, email, password);
+      if (!mounted) return;
+
+      AppError.showSuccess(context, CustomKeys.succesSignUp);
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      AppError.showError(context, AppError.getUserFriendlyMessage(e));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 48),
-                Text(
-                  'Hesap Oluştur',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Campus Online\'a hoş geldiniz',
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 48),
-                TextField(
-                  controller: userController,
-                  keyboardType: TextInputType.text,
-                  decoration: InputDecoration(
-                    labelText: CustomKeys.userName,
-                    prefixIcon: const Icon(Icons.person),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: CustomKeys.email,
-                    prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: passwordController,
-                  obscureText: _isObscure,
-                  decoration: InputDecoration(
-                    labelText: CustomKeys.password,
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isObscure ? Icons.visibility : Icons.visibility_off,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isObscure = !_isObscure;
-                        });
-                      },
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    filled: true,
-                    fillColor: theme.colorScheme.surface,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () async {
-                    if (userController.text.isNotEmpty &&
-                        emailController.text.isNotEmpty &&
-                        passwordController.text.isNotEmpty) {
-                      await _services.signUp(
-                        userController.text,
-                        emailController.text,
-                        passwordController.text,
-                      );
-                      if (mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          CupertinoPageRoute(
-                            builder: (context) => const SignIn(),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    CustomKeys.buttonNameUp,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    'Zaten hesabınız var mı? ${CustomKeys.buttonNameIn}',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
+    return AuthScaffold(
+      subtitle: 'Aramıza Katıl',
+      isLoading: _isLoading,
+      formFields: [
+        // Username Field
+        TextField(
+          controller: userController,
+          keyboardType: TextInputType.text,
+          enabled: !_isLoading,
+          style: const TextStyle(color: Colors.white),
+          decoration: AuthScaffold.inputDecoration(
+              CustomKeys.userName, Icons.person_outline),
+        ),
+        const SizedBox(height: 16),
+        // Email Field
+        TextField(
+          controller: emailController,
+          keyboardType: TextInputType.emailAddress,
+          enabled: !_isLoading,
+          style: const TextStyle(color: Colors.white),
+          decoration: AuthScaffold.inputDecoration(
+              CustomKeys.email, Icons.email_outlined),
+        ),
+        const SizedBox(height: 16),
+        // Password Field
+        TextField(
+          controller: passwordController,
+          obscureText: _isObscure,
+          enabled: !_isLoading,
+          onSubmitted: (_) => _handleSignUp(),
+          style: const TextStyle(color: Colors.white),
+          decoration: AuthScaffold.inputDecoration(
+                  CustomKeys.password, Icons.lock_outline)
+              .copyWith(
+            suffixIcon: IconButton(
+              icon: Icon(
+                _isObscure
+                    ? Icons.visibility_outlined
+                    : Icons.visibility_off_outlined,
+                color: Colors.white70,
+              ),
+              onPressed: () => setState(() => _isObscure = !_isObscure),
             ),
           ),
         ),
+      ],
+      actionButton: ElevatedButton(
+        onPressed: _isLoading ? null : _handleSignUp,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: _isLoading
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: Colors.white,
+                ),
+              )
+            : Text(
+                CustomKeys.buttonNameUp,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1,
+                ),
+              ),
+      ),
+      bottomRow: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            'Zaten hesabınız var mı?',
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 14,
+            ),
+          ),
+          TextButton(
+            onPressed: _isLoading ? null : () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            child: Text(
+              CustomKeys.buttonNameIn,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,13 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class VenueModel {
   final String id;
   final String name;
   final String? location;
   final double? latitude; // Yeni eklenen alan
   final double? longitude; // Yeni eklenen alan
-  final String weekdayHours;
-  final String weekendHours;
+  final String hours; // Supabase: hours
+  final String weekendHours; // Supabase: weekend_hours
   final String? menu;
   final String? description;
   final String? announcement;
@@ -24,8 +22,8 @@ class VenueModel {
     this.location,
     this.latitude, // Yeni eklenen alan
     this.longitude, // Yeni eklenen alan
-    required this.weekdayHours,
-    required this.weekendHours,
+    required this.hours, // Supabase: hours
+    required this.weekendHours, // Supabase: weekend_hours
     this.menu,
     this.description,
     this.announcement,
@@ -42,44 +40,57 @@ class VenueModel {
       id: id,
       name: json['name'] as String,
       location: json['location'] as String?,
-      latitude: (json['latitude'] as num?)?.toDouble(), // Yeni eklenen alan
-      longitude: (json['longitude'] as num?)?.toDouble(), // Yeni eklenen alan
-      weekdayHours: json['weekdayHours'] as String? ?? '',
-      weekendHours: json['weekendHours'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      hours: json['hours'] as String? ?? '',
+      weekendHours: json['weekend_hours'] as String? ?? '',
       menu: json['menu'] as String?,
       description: json['description'] as String?,
       announcement: json['announcement'] as String?,
-      imageUrl: json['imageUrl'] as String?,
-      createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (json['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      isFavorite: json['isFavorite'] as bool? ?? false,
-      amenities: List<String>.from(json['amenities'] ?? []),
-      visitCount: json['visitCount'] as int? ?? 0,
+      imageUrl: json['image_url'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'] as String)
+          : DateTime.now(),
+      isFavorite: json['is_favorite'] as bool? ?? false,
+      amenities: json['amenities'] != null
+          ? List<String>.from(json['amenities'] as List)
+          : const [],
+      visitCount: json['visit_count'] as int? ?? 0,
     );
   }
 
-  factory VenueModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return VenueModel.fromJson(data, doc.id);
+  /// Creates a VenueModel from a Supabase query response that includes
+  /// a left-joined `user_favorites` relation.
+  ///
+  /// This centralizes the favorite-check logic that was previously
+  /// duplicated across 7+ providers and services.
+  factory VenueModel.fromSupabaseJson(
+    Map<String, dynamic> json, {
+    String? userId,
+  }) {
+    json['is_favorite'] = userId != null &&
+        json['user_favorites'] != null &&
+        (json['user_favorites'] as List)
+            .any((fav) => fav['user_id'] == userId);
+    return VenueModel.fromJson(json, json['id']);
   }
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'location': location,
-      'latitude': latitude, // Yeni eklenen alan
-      'longitude': longitude, // Yeni eklenen alan
-      'weekdayHours': weekdayHours,
-      'weekendHours': weekendHours,
+      'latitude': latitude,
+      'longitude': longitude,
+      'hours': hours,
+      'weekend_hours': weekendHours,
       'menu': menu,
       'description': description,
       'announcement': announcement,
-      'imageUrl': imageUrl,
-      'createdAt': Timestamp.fromDate(createdAt),
-      'updatedAt': Timestamp.fromDate(updatedAt),
-      'isFavorite': isFavorite,
-      'amenities': amenities,
-      'visitCount': visitCount,
+      'image_url': imageUrl,
+      'visit_count': visitCount,
     };
   }
 
@@ -89,8 +100,8 @@ class VenueModel {
     String? location,
     double? latitude, // Yeni eklenen alan
     double? longitude, // Yeni eklenen alan
-    String? weekdayHours,
-    String? weekendHours,
+    String? hours, // Supabase: hours
+    String? weekendHours, // Supabase: weekend_hours
     String? menu,
     String? description,
     String? announcement,
@@ -107,8 +118,9 @@ class VenueModel {
       location: location ?? this.location,
       latitude: latitude ?? this.latitude, // Yeni eklenen alan
       longitude: longitude ?? this.longitude, // Yeni eklenen alan
-      weekdayHours: weekdayHours ?? this.weekdayHours,
-      weekendHours: weekendHours ?? this.weekendHours,
+      hours: hours ?? this.hours, // Supabase: hours
+      weekendHours:
+          weekendHours ?? this.weekendHours, // Supabase: weekend_hours
       menu: menu ?? this.menu,
       description: description ?? this.description,
       announcement: announcement ?? this.announcement,
