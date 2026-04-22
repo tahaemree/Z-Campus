@@ -4,6 +4,7 @@ import 'package:campus_online/providers/venue_provider.dart';
 import 'package:campus_online/providers/venue_actions.dart';
 import 'package:campus_online/providers/search_state.dart';
 import 'package:campus_online/models/venue_model.dart';
+import 'package:campus_online/commons/app_error.dart';
 import 'package:campus_online/widgets/venue_list_sliver.dart';
 import 'package:campus_online/widgets/home/search_bar_widget.dart';
 
@@ -45,10 +46,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     super.dispose();
   }
 
-
-
   void _handleVenueTap(String venueId) {
     Navigator.pushNamed(context, '/venue_details', arguments: venueId);
+  }
+
+  void _openNotificationsPanel() {
+    Navigator.pushNamed(context, '/notifications');
   }
 
   @override
@@ -65,10 +68,24 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       body: RefreshIndicator(
         color: theme.colorScheme.primary,
         onRefresh: () async {
-          clearVenuesCache(ref);
-          ref.invalidate(venuesProvider);
-          ref.invalidate(featuredVenuesProvider);
-          ref.invalidate(recentlyViewedVenuesProvider);
+          try {
+            clearVenuesCache(ref);
+            ref.invalidate(venuesProvider);
+            ref.invalidate(featuredVenuesProvider);
+            ref.invalidate(recentlyViewedVenuesProvider);
+
+            await Future.wait([
+              ref.refresh(venuesProvider.future),
+              ref.refresh(featuredVenuesProvider.future),
+              ref.refresh(recentlyViewedVenuesProvider.future),
+            ]);
+
+            if (!context.mounted) return;
+            AppError.showSuccess(context, 'Mekanlar yenilendi.');
+          } catch (e) {
+            if (!context.mounted) return;
+            AppError.showError(context, AppError.getUserFriendlyMessage(e));
+          }
         },
         child: CustomScrollView(
           controller: _scrollController,
@@ -81,9 +98,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               elevation: 2,
               backgroundColor: theme.scaffoldBackgroundColor,
               toolbarHeight: _isSearchActive ? 75 : 65,
-              titleSpacing: _isSearchActive
-                  ? 0
-                  : NavigationToolbar.kMiddleSpacing,
+              titleSpacing:
+                  _isSearchActive ? 0 : NavigationToolbar.kMiddleSpacing,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   color: theme.scaffoldBackgroundColor,
@@ -108,8 +124,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                         controller: _searchController,
                         autoFocus: true,
                         onSearch: (query) {
-                          ref.read(searchQueryProvider.notifier).state =
-                              query;
+                          ref.read(searchQueryProvider.notifier).state = query;
                         },
                       ),
                     )
@@ -124,11 +139,19 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 if (!_isSearchActive)
                   IconButton(
                     icon: Icon(
+                      Icons.notifications_none_rounded,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    tooltip: 'Bildirimler',
+                    onPressed: _openNotificationsPanel,
+                  ),
+                if (!_isSearchActive)
+                  IconButton(
+                    icon: Icon(
                       Icons.search_rounded,
                       color: theme.colorScheme.onSurface,
                     ),
-                    onPressed: () =>
-                        setState(() => _isSearchActive = true),
+                    onPressed: () => setState(() => _isSearchActive = true),
                   ),
                 if (!_isSearchActive) const SizedBox(width: 8),
               ],
@@ -152,8 +175,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     }
                     return SliverToBoxAdapter(
                       child: Padding(
-                        padding:
-                            const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                         child: Text(
                           'Öne Çıkan Yerler',
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -189,8 +211,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                     }
                     return SliverToBoxAdapter(
                       child: Padding(
-                        padding:
-                            const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                         child: Text(
                           'Son Aranan Yerler',
                           style: theme.textTheme.titleLarge?.copyWith(
@@ -228,9 +249,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                       );
                     }
                     final sortedVenues = List<VenueModel>.from(allVenues);
-                    sortedVenues.sort((a, b) => a.name
-                        .toLowerCase()
-                        .compareTo(b.name.toLowerCase()));
+                    sortedVenues.sort((a, b) =>
+                        a.name.toLowerCase().compareTo(b.name.toLowerCase()));
                     return VenueListSliver(
                       venues: sortedVenues,
                       onVenueTap: _handleVenueTap,

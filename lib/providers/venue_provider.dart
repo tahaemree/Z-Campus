@@ -1,8 +1,33 @@
+import 'dart:async';
+
+import 'package:campus_online/commons/postgrest_helpers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/models/venue_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:campus_online/providers/cache_manager.dart';
+
+String _normalizeSearchQuery(String query) {
+  return query.trim().replaceAll(RegExp(r'\s+'), ' ');
+}
+
+Future<void> _debounceSearch(Ref ref) async {
+  final completer = Completer<void>();
+  final timer = Timer(const Duration(milliseconds: 300), () {
+    if (!completer.isCompleted) {
+      completer.complete();
+    }
+  });
+
+  ref.onDispose(() {
+    timer.cancel();
+    if (!completer.isCompleted) {
+      completer.complete();
+    }
+  });
+
+  await completer.future;
+}
 
 /// Direct Supabase client provider — single source for DI.
 final supabaseProvider =
@@ -61,14 +86,10 @@ final venuesByCategoryProvider =
     List<dynamic> response;
 
     if (userId != null) {
-      response = await supabase
-          .from('venues')
-          .select('''
+      response = await supabase.from('venues').select('''
             *,
             user_favorites!left(user_id)
-          ''')
-          .eq('category', category)
-          .order('name');
+          ''').eq('category', category).order('name');
     } else {
       response = await supabase
           .from('venues')
@@ -87,31 +108,34 @@ final venuesByCategoryProvider =
 });
 
 /// Search venues with query.
-final searchVenuesProvider =
-    FutureProvider.autoDispose.family<List<VenueModel>, String>((ref, query) async {
-  if (query.isEmpty) return [];
+final searchVenuesProvider = FutureProvider.autoDispose
+    .family<List<VenueModel>, String>((ref, query) async {
+  final normalizedQuery = _normalizeSearchQuery(query);
+  if (normalizedQuery.length < 2) return [];
+
+  await _debounceSearch(ref);
 
   try {
     final supabase = ref.read(supabaseProvider);
     final userId = supabase.auth.currentUser?.id;
+    final safeQuery = escapePostgrestLikeValue(normalizedQuery);
+    final searchFilter =
+        'name.ilike.%$safeQuery%,description.ilike.%$safeQuery%,location.ilike.%$safeQuery%';
 
     List<dynamic> response;
 
     if (userId != null) {
-      response = await supabase
-          .from('venues')
-          .select('''
+      response = await supabase.from('venues').select('''
             *,
             user_favorites!left(user_id)
-          ''')
-          .or('name.ilike.%$query%,description.ilike.%$query%,location.ilike.%$query%')
-          .order('name');
+          ''').or(searchFilter).order('name').limit(50);
     } else {
       response = await supabase
           .from('venues')
           .select('*')
-          .or('name.ilike.%$query%,description.ilike.%$query%,location.ilike.%$query%')
-          .order('name');
+          .or(searchFilter)
+          .order('name')
+          .limit(50);
     }
 
     return response

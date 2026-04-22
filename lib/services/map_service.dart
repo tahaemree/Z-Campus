@@ -4,6 +4,88 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class MapService {
+  static Future<void> launchMapByQuery({
+    required String query,
+    required BuildContext context,
+  }) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Bu etkinlik için konum bilgisi bulunmuyor.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    final encodedQuery = Uri.encodeComponent(cleanQuery);
+
+    try {
+      if (kIsWeb) {
+        final webUrl =
+            'https://www.google.com/maps/search/?api=1&query=$encodedQuery';
+        if (await launchUrl(Uri.parse(webUrl))) {
+          return;
+        }
+      } else if (Platform.isIOS) {
+        final appleMaps = Uri.parse('https://maps.apple.com/?q=$encodedQuery');
+        if (await canLaunchUrl(appleMaps)) {
+          if (await launchUrl(
+            appleMaps,
+            mode: LaunchMode.externalApplication,
+          )) {
+            return;
+          }
+        }
+
+        final googleMapsIos = Uri.parse('comgooglemaps://?q=$encodedQuery');
+        if (await canLaunchUrl(googleMapsIos)) {
+          if (await launchUrl(
+            googleMapsIos,
+            mode: LaunchMode.externalApplication,
+          )) {
+            return;
+          }
+        }
+      } else if (Platform.isAndroid) {
+        final androidUrls = [
+          'google.navigation:q=$encodedQuery&mode=w',
+          'geo:0,0?q=$encodedQuery',
+          'https://www.google.com/maps/search/?api=1&query=$encodedQuery',
+        ];
+
+        for (final url in androidUrls) {
+          final uri = Uri.parse(url);
+          try {
+            if (await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+              return;
+            }
+          } catch (_) {
+            continue;
+          }
+        }
+      }
+
+      final fallback = Uri.parse(
+          'https://www.google.com/maps/search/?api=1&query=$encodedQuery');
+      if (!await launchUrl(fallback, mode: LaunchMode.externalApplication)) {
+        await launchUrl(fallback, mode: LaunchMode.inAppWebView);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Harita uygulaması açılamadı: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   static Future<void> launchMap({
     required double? latitude,
     required double? longitude,

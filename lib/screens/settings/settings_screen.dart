@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:campus_online/providers/theme_provider.dart';
-import 'package:campus_online/screens/auth/auth_services.dart';
+import 'package:campus_online/providers/access_provider.dart';
+import 'package:campus_online/providers/service_providers.dart';
 import 'package:campus_online/screens/admin/admin_panel_screen.dart';
+import 'package:campus_online/screens/events/event_management_screen.dart';
 import 'package:campus_online/commons/app_error.dart';
-import 'package:campus_online/services/admin_service.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -15,25 +16,33 @@ class SettingsScreen extends ConsumerWidget {
     final isDarkMode = ref.watch(themeProvider).isDarkMode;
     final currentUser = Supabase.instance.client.auth.currentUser;
     final theme = Theme.of(context);
+    final accessAsync = ref.watch(currentUserAccessProvider);
 
     final String displayName =
         currentUser?.userMetadata?['display_name'] ?? 'İsimsiz Kullanıcı';
-    final String photoUrl =
-        currentUser?.userMetadata?['avatar_url'] ?? '';
+    final String photoUrl = currentUser?.userMetadata?['avatar_url'] ?? '';
 
-    // Use AdminService for consistent admin check
-    final adminService = AdminService();
-    final isAdmin = adminService.isAdmin();
+    final isAdmin = accessAsync.maybeWhen(
+      data: (access) => access.isAdmin,
+      orElse: () => false,
+    );
+
+    final canManageEvents = accessAsync.maybeWhen(
+      data: (access) => access.canManageEvents,
+      orElse: () => false,
+    );
+
+    final canManageVenues = accessAsync.maybeWhen(
+      data: (access) => access.isAdmin || access.editableVenueIds.isNotEmpty,
+      orElse: () => false,
+    );
 
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
         title: const Text(
           'Ayarlar',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         elevation: 0,
@@ -64,13 +73,14 @@ class SettingsScreen extends ConsumerWidget {
                     CircleAvatar(
                       radius: 36,
                       backgroundColor: theme.colorScheme.primaryContainer,
-                      backgroundImage: photoUrl.isNotEmpty
-                          ? NetworkImage(photoUrl)
-                          : null,
+                      backgroundImage:
+                          photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
                       child: photoUrl.isEmpty
-                          ? Icon(Icons.person,
+                          ? Icon(
+                              Icons.person,
                               size: 36,
-                              color: theme.colorScheme.onPrimaryContainer)
+                              color: theme.colorScheme.onPrimaryContainer,
+                            )
                           : null,
                     ),
                     const SizedBox(width: 16),
@@ -107,7 +117,8 @@ class SettingsScreen extends ConsumerWidget {
               elevation: 0,
               margin: const EdgeInsets.only(bottom: 16),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
@@ -115,9 +126,11 @@ class SettingsScreen extends ConsumerWidget {
                     CircleAvatar(
                       radius: 32,
                       backgroundColor: theme.colorScheme.primaryContainer,
-                      child: Icon(Icons.person,
-                          size: 32,
-                          color: theme.colorScheme.onPrimaryContainer),
+                      child: Icon(
+                        Icons.person,
+                        size: 32,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -145,8 +158,30 @@ class SettingsScreen extends ConsumerWidget {
                   value: isDarkMode,
                   onChanged: (value) {
                     ref.read(themeProvider.notifier).toggleTheme();
+                    AppError.showSuccess(
+                      context,
+                      value
+                          ? 'Karanlık mod etkinleştirildi.'
+                          : 'Aydınlık mod etkinleştirildi.',
+                    );
                   },
                 ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildSection(
+            title: 'Destek',
+            icon: Icons.support_agent_outlined,
+            children: [
+              _buildSettingTile(
+                leading: Icon(
+                  Icons.forum_outlined,
+                  color: theme.colorScheme.primary,
+                ),
+                title: 'Bize Ulaşın',
+                onTap: () => Navigator.pushNamed(context, '/contact_us'),
+                showChevron: true,
               ),
             ],
           ),
@@ -175,26 +210,42 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ],
           ),
-          if (isAdmin) ...[
+          if (canManageVenues || canManageEvents) ...[
             const SizedBox(height: 16),
             _buildSection(
               title: 'Yönetim',
               icon: Icons.admin_panel_settings_outlined,
               children: [
-                _buildSettingTile(
-                  leading: Icon(
-                    Icons.dashboard_outlined,
-                    color: theme.colorScheme.primary,
-                  ),
-                  title: 'Admin Paneli',
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AdminPanelScreen(),
+                if (canManageVenues)
+                  _buildSettingTile(
+                    leading: Icon(
+                      isAdmin ? Icons.dashboard_outlined : Icons.store_outlined,
+                      color: theme.colorScheme.primary,
                     ),
+                    title: isAdmin ? 'Admin Paneli' : 'Mekan Yönetimi',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AdminPanelScreen(),
+                      ),
+                    ),
+                    showChevron: true,
                   ),
-                  showChevron: true,
-                ),
+                if (canManageEvents)
+                  _buildSettingTile(
+                    leading: Icon(
+                      Icons.event_note_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                    title: 'Etkinlik Yönetimi',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const EventManagementScreen(),
+                      ),
+                    ),
+                    showChevron: true,
+                  ),
               ],
             ),
           ],
@@ -207,13 +258,10 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.account_circle_outlined,
               children: [
                 _buildSettingTile(
-                  leading: Icon(
-                    Icons.logout,
-                    color: theme.colorScheme.error,
-                  ),
+                  leading: Icon(Icons.logout, color: theme.colorScheme.error),
                   title: 'Çıkış Yap',
                   titleColor: theme.colorScheme.error,
-                  onTap: () => _handleLogout(context, theme),
+                  onTap: () => _handleLogout(context, theme, ref),
                 ),
               ],
             ),
@@ -224,13 +272,16 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _handleLogout(BuildContext context, ThemeData theme) async {
+  Future<void> _handleLogout(
+    BuildContext context,
+    ThemeData theme,
+    WidgetRef ref,
+  ) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Çıkış Yap'),
-        content:
-            const Text('Çıkış yapmak istediğinize emin misiniz?'),
+        content: const Text('Çıkış yapmak istediğinize emin misiniz?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -249,14 +300,14 @@ class SettingsScreen extends ConsumerWidget {
 
     if (shouldLogout == true) {
       try {
-        await AuthServices().signOut();
+        await ref.read(authServiceProvider).signOut();
+        if (context.mounted) {
+          AppError.showSuccess(context, 'Çıkış yapıldı.');
+        }
         // Auth state change handled by main.dart's authStateProvider
       } catch (e) {
         if (context.mounted) {
-          AppError.showError(
-            context,
-            AppError.getUserFriendlyMessage(e),
-          );
+          AppError.showError(context, AppError.getUserFriendlyMessage(e));
         }
       }
     }
@@ -289,9 +340,7 @@ class SettingsScreen extends ConsumerWidget {
         Card(
           elevation: 0,
           margin: EdgeInsets.zero,
-          child: Column(
-            children: children,
-          ),
+          child: Column(children: children),
         ),
       ],
     );
@@ -309,10 +358,7 @@ class SettingsScreen extends ConsumerWidget {
       leading: leading,
       title: Text(
         title,
-        style: TextStyle(
-          color: titleColor,
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(color: titleColor, fontWeight: FontWeight.w500),
       ),
       trailing:
           trailing ?? (showChevron ? const Icon(Icons.chevron_right) : null),

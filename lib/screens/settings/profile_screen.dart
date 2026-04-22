@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:campus_online/commons/app_error.dart';
+import 'package:campus_online/providers/service_providers.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -18,8 +19,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _isEditing = false;
   String? _currentName;
 
-  final _supabase = Supabase.instance.client;
-  User? get user => _supabase.auth.currentUser;
+  User? get user => ref.read(profileServiceProvider).currentUser;
 
   @override
   void initState() {
@@ -36,19 +36,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _fetchUserData() async {
     if (user == null) return;
     try {
-      final data = await _supabase
-          .from('users')
-          .select()
-          .eq('id', user!.id)
-          .maybeSingle();
+      final displayName = await ref.read(profileServiceProvider).fetchDisplayName();
 
       if (!mounted) return;
-      if (data != null && data['display_name'] != null) {
-        _nameController.text = data['display_name'];
-        setState(() => _currentName = data['display_name']);
-      } else if (user!.userMetadata?['display_name'] != null) {
-        _nameController.text = user!.userMetadata!['display_name'];
-        setState(() => _currentName = user!.userMetadata!['display_name']);
+      if (displayName != null && displayName.isNotEmpty) {
+        _nameController.text = displayName;
+        setState(() => _currentName = displayName);
       }
     } catch (e) {
       debugPrint('Error fetching user data: $e');
@@ -61,11 +54,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     try {
       final name = _nameController.text.trim();
-      await _supabase
-          .from('users')
-          .update({'display_name': name}).eq('id', user!.id);
-      await _supabase.auth
-          .updateUser(UserAttributes(data: {'display_name': name}));
+      await ref.read(profileServiceProvider).updateDisplayName(name);
 
       if (!mounted) return;
       setState(() {
@@ -75,7 +64,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       AppError.showSuccess(context, 'Profil güncellendi.');
     } catch (e) {
       if (!mounted) return;
-      AppError.showError(context, 'Profil güncellenemedi.');
+      AppError.showError(context, AppError.getUserFriendlyMessage(e));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -114,9 +103,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     setState(() => _deleting = true);
 
     try {
-      // delete_user RPC handles all cleanup (public tables + auth.users)
-      await _supabase.rpc('delete_user');
-      await _supabase.auth.signOut();
+      await ref.read(profileServiceProvider).deleteCurrentUser();
     } on PostgrestException catch (e) {
       if (!mounted) return;
       if (e.message.contains('function') || e.code == '42883') {

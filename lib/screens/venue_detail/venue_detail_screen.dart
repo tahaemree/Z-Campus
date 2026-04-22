@@ -37,8 +37,18 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
   }
 
   Future<void> _handleToggleFavorite(String venueId) async {
+    final wasFavorite = ref.read(favoriteIdsProvider).contains(venueId);
+
     try {
       await ref.read(favoriteIdsProvider.notifier).toggle(venueId);
+      if (!mounted) return;
+
+      AppError.showSuccess(
+        context,
+        wasFavorite
+            ? 'Mekan favorilerden çıkarıldı.'
+            : 'Mekan favorilere eklendi.',
+      );
     } catch (e) {
       if (!mounted) return;
       AppError.showError(context, AppError.getUserFriendlyMessage(e));
@@ -74,13 +84,11 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                     color: theme.colorScheme.surface,
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color:
-                          theme.colorScheme.outline.withValues(alpha: 0.2),
+                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.shadow
-                            .withValues(alpha: 0.1),
+                        color: theme.colorScheme.shadow.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -97,13 +105,11 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                           children: [
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     venue.name,
-                                    style: theme
-                                        .textTheme.headlineMedium
+                                    style: theme.textTheme.headlineMedium
                                         ?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       letterSpacing: -0.5,
@@ -115,33 +121,29 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                                     Row(
                                       children: [
                                         Container(
-                                          padding:
-                                              const EdgeInsets.all(6),
+                                          padding: const EdgeInsets.all(6),
                                           decoration: BoxDecoration(
-                                            color: theme.colorScheme
-                                                .primaryContainer,
+                                            color: theme
+                                                .colorScheme.primaryContainer,
                                             borderRadius:
-                                                BorderRadius.circular(
-                                                    8),
+                                                BorderRadius.circular(8),
                                           ),
                                           child: Icon(
                                             Icons.location_on,
                                             size: 16,
-                                            color: theme.colorScheme
-                                                .onPrimaryContainer,
+                                            color: theme
+                                                .colorScheme.onPrimaryContainer,
                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             venue.location!,
-                                            style: theme
-                                                .textTheme.bodyLarge
+                                            style: theme.textTheme.bodyLarge
                                                 ?.copyWith(
-                                              color: theme.colorScheme
-                                                  .onSurfaceVariant,
-                                              fontWeight:
-                                                  FontWeight.w500,
+                                              color: theme
+                                                  .colorScheme.onSurfaceVariant,
+                                              fontWeight: FontWeight.w500,
                                             ),
                                           ),
                                         ),
@@ -163,8 +165,7 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                                           .withValues(alpha: 0.8),
                                     ],
                                   ),
-                                  borderRadius:
-                                      BorderRadius.circular(16),
+                                  borderRadius: BorderRadius.circular(16),
                                   boxShadow: [
                                     BoxShadow(
                                       color: theme.colorScheme.primary
@@ -178,34 +179,28 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                                   color: Colors.transparent,
                                   child: InkWell(
                                     onTap: () => _launchMap(venue),
-                                    borderRadius:
-                                        BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(16),
                                     child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(
+                                      padding: const EdgeInsets.symmetric(
                                         horizontal: 20,
                                         vertical: 12,
                                       ),
                                       child: Row(
-                                        mainAxisSize:
-                                            MainAxisSize.min,
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
                                             Icons.directions_rounded,
-                                            color: theme.colorScheme
-                                                .onPrimary,
+                                            color: theme.colorScheme.onPrimary,
                                             size: 20,
                                           ),
                                           const SizedBox(width: 8),
                                           Text(
                                             'Tarif Al',
-                                            style: theme
-                                                .textTheme.labelLarge
+                                            style: theme.textTheme.labelLarge
                                                 ?.copyWith(
-                                              color: theme.colorScheme
-                                                  .onPrimary,
-                                              fontWeight:
-                                                  FontWeight.w600,
+                                              color:
+                                                  theme.colorScheme.onPrimary,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                         ],
@@ -222,8 +217,7 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: theme
-                                .colorScheme.surfaceContainer
+                            color: theme.colorScheme.surfaceContainer
                                 .withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -289,8 +283,7 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                         const SizedBox(height: 16),
                       ],
                       _buildHoursSection(venue, theme),
-                      if (venue.menu != null &&
-                          venue.menu!.isNotEmpty) ...[
+                      if (venue.menu != null && venue.menu!.isNotEmpty) ...[
                         const SizedBox(height: 16),
                         _buildMenuSection(venue, theme),
                       ],
@@ -450,15 +443,12 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildHoursRow(
-                            'Hafta İçi', venue.hours, theme),
+                        _buildHoursRow('Hafta İçi', venue.hours, theme),
                         const SizedBox(height: 8),
-                        _buildHoursRow(
-                            'Hafta Sonu', venue.weekendHours, theme),
+                        _buildHoursRow('Hafta Sonu', venue.weekendHours, theme),
                       ],
                     )
-                  : Text(venue.hours,
-                      style: theme.textTheme.bodyMedium),
+                  : Text(venue.hours, style: theme.textTheme.bodyMedium),
             ),
           ),
         ),
@@ -511,8 +501,7 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child:
-                  Text(venue.menu!, style: theme.textTheme.bodyMedium),
+              child: Text(venue.menu!, style: theme.textTheme.bodyMedium),
             ),
           ),
         ),
@@ -545,8 +534,8 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
           child: Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Text(venue.description!,
-                  style: theme.textTheme.bodyMedium),
+              child:
+                  Text(venue.description!, style: theme.textTheme.bodyMedium),
             ),
           ),
         ),
@@ -581,14 +570,20 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
       final closeHour = int.parse(match.group(3)!);
       final closeMin = int.parse(match.group(4)!);
 
+      if (openHour > 23 || closeHour > 23 || openMin > 59 || closeMin > 59) {
+        return '-';
+      }
+
       final nowMinutes = now.hour * 60 + now.minute;
       final openMinutes = openHour * 60 + openMin;
       final closeMinutes = closeHour * 60 + closeMin;
 
-      if (nowMinutes >= openMinutes && nowMinutes < closeMinutes) {
-        return 'Açık';
-      }
-      return 'Kapalı';
+      final crossesMidnight = closeMinutes <= openMinutes;
+      final isOpen = crossesMidnight
+          ? (nowMinutes >= openMinutes || nowMinutes < closeMinutes)
+          : (nowMinutes >= openMinutes && nowMinutes < closeMinutes);
+
+      return isOpen ? 'Açık' : 'Kapalı';
     }
 
     return '-';

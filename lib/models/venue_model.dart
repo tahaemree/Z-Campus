@@ -1,6 +1,7 @@
 class VenueModel {
   final String id;
   final String name;
+  final String? category;
   final String? location;
   final double? latitude; // Yeni eklenen alan
   final double? longitude; // Yeni eklenen alan
@@ -19,6 +20,7 @@ class VenueModel {
   VenueModel({
     required this.id,
     required this.name,
+    this.category,
     this.location,
     this.latitude, // Yeni eklenen alan
     this.longitude, // Yeni eklenen alan
@@ -39,6 +41,7 @@ class VenueModel {
     return VenueModel(
       id: id,
       name: json['name'] as String,
+      category: json['category'] as String?,
       location: json['location'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
@@ -71,16 +74,18 @@ class VenueModel {
     Map<String, dynamic> json, {
     String? userId,
   }) {
-    json['is_favorite'] = userId != null &&
-        json['user_favorites'] != null &&
-        (json['user_favorites'] as List)
-            .any((fav) => fav['user_id'] == userId);
-    return VenueModel.fromJson(json, json['id']);
+    final mapped = Map<String, dynamic>.from(json);
+    mapped['is_favorite'] = userId != null &&
+        mapped['user_favorites'] != null &&
+        (mapped['user_favorites'] as List)
+            .any((favorite) => favorite['user_id'] == userId);
+    return VenueModel.fromJson(mapped, mapped['id'] as String);
   }
 
   Map<String, dynamic> toJson() {
     return {
       'name': name,
+      'category': category,
       'location': location,
       'latitude': latitude,
       'longitude': longitude,
@@ -97,6 +102,7 @@ class VenueModel {
   VenueModel copyWith({
     String? id,
     String? name,
+    String? category,
     String? location,
     double? latitude, // Yeni eklenen alan
     double? longitude, // Yeni eklenen alan
@@ -115,6 +121,7 @@ class VenueModel {
     return VenueModel(
       id: id ?? this.id,
       name: name ?? this.name,
+      category: category ?? this.category,
       location: location ?? this.location,
       latitude: latitude ?? this.latitude, // Yeni eklenen alan
       longitude: longitude ?? this.longitude, // Yeni eklenen alan

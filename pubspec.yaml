@@ -10,15 +10,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  firebase_core: ^3.13.0
+  firebase_messaging: ^15.2.5
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.5.3
   cached_network_image: ^3.4.1
   google_fonts: ^8.0.2
-  json_annotation: ^4.9.0
   supabase_flutter: ^2.8.0
   url_launcher: ^6.3.1
-  flutter_launcher_icons: ^0.14.3
+  image_picker: ^1.1.2
+  flutter_map: ^8.2.2
+  latlong2: ^0.9.1
   transparent_image: ^2.0.1
 
 dev_dependencies:
@@ -26,6 +29,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
   flutter_native_splash: ^2.4.4
+  flutter_launcher_icons: ^0.14.3
 flutter_native_splash:
   color: "#2c2f60"
   image: lib/assets/app_acilis.png

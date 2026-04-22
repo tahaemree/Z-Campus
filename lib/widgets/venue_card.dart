@@ -42,8 +42,18 @@ class VenueCard extends ConsumerStatefulWidget {
 
 class _VenueCardState extends ConsumerState<VenueCard> {
   Future<void> _handleFavoriteToggle() async {
+    final wasFavorite = ref.read(favoriteIdsProvider).contains(widget.venueId);
+
     try {
       await ref.read(favoriteIdsProvider.notifier).toggle(widget.venueId);
+      if (!mounted) return;
+
+      AppError.showSuccess(
+        context,
+        wasFavorite
+            ? 'Mekan favorilerden çıkarıldı.'
+            : 'Mekan favorilere eklendi.',
+      );
     } catch (e) {
       if (!mounted) return;
       AppError.showError(context, AppError.getUserFriendlyMessage(e));
@@ -91,29 +101,75 @@ class _VenueCardState extends ConsumerState<VenueCard> {
                           children: [
                             Text(
                               widget.venueName,
-                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                              style: theme.textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                             const SizedBox(height: 6),
                             if (widget.location.isNotEmpty) ...[
                               Row(children: [
-                                Icon(widget.venueIcon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                                Icon(widget.venueIcon,
+                                    size: 14,
+                                    color: theme.colorScheme.onSurfaceVariant),
                                 const SizedBox(width: 5),
-                                Expanded(child: Text(widget.location, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                                Expanded(
+                                    child: Text(widget.location,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                                color: theme.colorScheme
+                                                    .onSurfaceVariant,
+                                                fontSize: 12),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis)),
                               ]),
                               const SizedBox(height: 4),
                             ],
                             Row(children: [
-                              Icon(Icons.access_time, size: 14, color: theme.colorScheme.onSurfaceVariant),
+                              Icon(Icons.access_time,
+                                  size: 14,
+                                  color: theme.colorScheme.onSurfaceVariant),
                               const SizedBox(width: 5),
                               Expanded(
-                                child: widget.weekendHours != null && widget.weekendHours!.isNotEmpty
-                                    ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                        Text('Hafta içi: ${widget.hours.replaceAll('\n', ', ')}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                        Text('Hafta sonu: ${widget.weekendHours!.replaceAll('\n', ', ')}', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontWeight: FontWeight.w500, fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                      ])
-                                    : Text(widget.hours.replaceAll('\n', ', '), style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                child: widget.weekendHours != null &&
+                                        widget.weekendHours!.isNotEmpty
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                            Text(
+                                                'Hafta içi: ${widget.hours.replaceAll('\n', ', ')}',
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                        color: theme.colorScheme
+                                                            .onSurfaceVariant,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: 11),
+                                                maxLines: 1,
+                                                overflow:
+                                                    TextOverflow.ellipsis),
+                                            Text(
+                                                'Hafta sonu: ${widget.weekendHours!.replaceAll('\n', ', ')}',
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                        color: theme.colorScheme
+                                                            .onSurfaceVariant,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        fontSize: 11),
+                                                maxLines: 1,
+                                                overflow:
+                                                    TextOverflow.ellipsis),
+                                          ])
+                                    : Text(widget.hours.replaceAll('\n', ', '),
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                                color: theme.colorScheme
+                                                    .onSurfaceVariant,
+                                                fontSize: 12),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis),
                               ),
                             ]),
                           ],
@@ -128,11 +184,16 @@ class _VenueCardState extends ConsumerState<VenueCard> {
                             IconButton(
                               icon: AnimatedSwitcher(
                                 duration: const Duration(milliseconds: 200),
-                                transitionBuilder: (child, anim) => ScaleTransition(scale: anim, child: child),
+                                transitionBuilder: (child, anim) =>
+                                    ScaleTransition(scale: anim, child: child),
                                 child: Icon(
-                                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                                  isFavorite
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
                                   key: ValueKey(isFavorite),
-                                  color: isFavorite ? Colors.red : theme.colorScheme.onSurfaceVariant,
+                                  color: isFavorite
+                                      ? Colors.red
+                                      : theme.colorScheme.onSurfaceVariant,
                                   size: 20,
                                 ),
                               ),
@@ -140,9 +201,11 @@ class _VenueCardState extends ConsumerState<VenueCard> {
                               constraints: const BoxConstraints(),
                               onPressed: _handleFavoriteToggle,
                             ),
-                            if (widget.announcement != null && widget.announcement!.isNotEmpty) ...[
+                            if (widget.announcement != null &&
+                                widget.announcement!.isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Icon(Icons.campaign_rounded, color: theme.colorScheme.error, size: 20),
+                              Icon(Icons.campaign_rounded,
+                                  color: theme.colorScheme.error, size: 20),
                             ],
                           ],
                         ),
@@ -169,8 +232,10 @@ class _VenueCardState extends ConsumerState<VenueCard> {
               ? CachedNetworkImage(
                   imageUrl: widget.imageUrl!,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) => Image.asset('assets/images/izu.png', fit: BoxFit.cover),
-                  errorWidget: (_, __, ___) => Image.asset('assets/images/izu.png', fit: BoxFit.cover),
+                  placeholder: (_, __) =>
+                      Image.asset('assets/images/izu.png', fit: BoxFit.cover),
+                  errorWidget: (_, __, ___) =>
+                      Image.asset('assets/images/izu.png', fit: BoxFit.cover),
                 )
               : Image.asset('assets/images/izu.png', fit: BoxFit.cover),
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/screens/home/explore_screen.dart';
+import 'package:campus_online/screens/events/events_screen.dart';
 import 'package:campus_online/screens/favorites/favorites_screen.dart';
 import 'package:campus_online/screens/settings/settings_screen.dart';
 
@@ -35,6 +36,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         },
         children: const [
           ExploreScreen(),
+          EventsScreen(),
           FavoritesScreen(),
           SettingsScreen(),
         ],
@@ -62,8 +64,9 @@ class _MainScreenState extends ConsumerState<MainScreen> {
           elevation: 8,
           shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.3),
           surfaceTintColor: Colors.transparent,
-          indicatorColor:
-              theme.colorScheme.primaryContainer.withValues(alpha: 0.7),
+          indicatorColor: theme.colorScheme.primaryContainer.withValues(
+            alpha: 0.7,
+          ),
           destinations: [
             NavigationDestination(
               icon: Icon(
@@ -75,6 +78,14 @@ class _MainScreenState extends ConsumerState<MainScreen> {
                 color: theme.colorScheme.primary,
               ),
               label: 'Keşfet',
+            ),
+            NavigationDestination(
+              icon: Icon(
+                Icons.event_outlined,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              selectedIcon: Icon(Icons.event, color: theme.colorScheme.primary),
+              label: 'Etkinlikler',
             ),
             NavigationDestination(
               icon: Icon(

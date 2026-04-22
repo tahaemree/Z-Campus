@@ -35,6 +35,19 @@ class AppError {
           return e.message;
       }
     }
-    return e.toString();
+
+    final rawMessage = e.toString();
+    if (rawMessage.contains(
+      'You need to provide asyncStorage to perform pkce flow',
+    )) {
+      return 'Kimlik doğrulama akışı başlatılamadı. Lütfen uygulamayı güncelleyip tekrar deneyin.';
+    }
+
+    const exceptionPrefix = 'Exception: ';
+    if (rawMessage.startsWith(exceptionPrefix)) {
+      return rawMessage.substring(exceptionPrefix.length);
+    }
+
+    return rawMessage;
   }
 }

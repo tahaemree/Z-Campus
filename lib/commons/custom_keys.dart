@@ -7,12 +7,24 @@ class CustomKeys {
   static const password = 'Password';
   static const buttonNameIn = 'Giriş Yap';
   static const buttonNameUp = 'Kayıt Ol';
-  static const myAccunt = 'Hesabım Var';
+  static const myAccount = 'Hesabım Var';
+
+  @Deprecated('Use myAccount instead')
+  static const myAccunt = myAccount;
 
   /// Services Keys
-  static const succesSignUp = 'Kayıt Başarılı';
+  static const successSignUp = 'Kayıt Başarılı';
   static const errorSignUp = 'Kayıt Başarısız';
-  static const succesLogin = 'Giriş Başarılı';
-  static const succesLogOut = 'Çıkış Başarılı';
+  static const successLogin = 'Giriş Başarılı';
+  static const successLogOut = 'Çıkış Başarılı';
   static const errorLogin = 'Şifre ya da E-mail Hatalı Tekrar Deneyiniz';
+
+  @Deprecated('Use successSignUp instead')
+  static const succesSignUp = successSignUp;
+
+  @Deprecated('Use successLogin instead')
+  static const succesLogin = successLogin;
+
+  @Deprecated('Use successLogOut instead')
+  static const succesLogOut = successLogOut;
 }

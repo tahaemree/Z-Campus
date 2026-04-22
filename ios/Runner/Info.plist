@@ -45,6 +45,12 @@
 		<true/>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
+		<key>NSCameraUsageDescription</key>
+		<string>Etkinlik ve mekan gorseli eklemek icin kameraya erisim gerekir.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Etkinlik ve mekan gorseli secmek icin galeriye erisim gerekir.</string>
+		<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>Secilen gorselleri yukleme akisinda kullanmak icin erisim gerekir.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

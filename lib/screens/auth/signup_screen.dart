@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/commons/custom_keys.dart';
 import 'package:campus_online/commons/app_error.dart';
-import 'package:campus_online/screens/auth/auth_services.dart';
+import 'package:campus_online/providers/service_providers.dart';
 import 'package:campus_online/widgets/auth/auth_scaffold.dart';
 
-class SignUp extends StatefulWidget {
+class SignUp extends ConsumerStatefulWidget {
   const SignUp({super.key});
 
   @override
-  State<SignUp> createState() => _SignUpState();
+  ConsumerState<SignUp> createState() => _SignUpState();
 }
 
-class _SignUpState extends State<SignUp> {
+class _SignUpState extends ConsumerState<SignUp> {
   final TextEditingController userController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final AuthServices _services = AuthServices();
   bool _isObscure = true;
   bool _isLoading = false;
 
@@ -50,10 +50,10 @@ class _SignUpState extends State<SignUp> {
     setState(() => _isLoading = true);
 
     try {
-      await _services.signUp(username, email, password);
+      await ref.read(authServiceProvider).signUp(username, email, password);
       if (!mounted) return;
 
-      AppError.showSuccess(context, CustomKeys.succesSignUp);
+      AppError.showSuccess(context, CustomKeys.successSignUp);
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -129,9 +129,9 @@ class _SignUpState extends State<SignUp> {
                   color: Colors.white,
                 ),
               )
-            : Text(
+            : const Text(
                 CustomKeys.buttonNameUp,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
@@ -155,9 +155,9 @@ class _SignUpState extends State<SignUp> {
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
-            child: Text(
+            child: const Text(
               CustomKeys.buttonNameIn,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
               ),
