@@ -1,19 +1,32 @@
+import 'dart:async';
+
 import 'package:campus_online/commons/app_error.dart';
 import 'package:campus_online/models/notification_model.dart';
 import 'package:campus_online/providers/notifications_provider.dart';
-import 'package:campus_online/providers/service_providers.dart';
 import 'package:campus_online/widgets/venue_list_sliver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class NotificationsPanelScreen extends ConsumerWidget {
-  const NotificationsPanelScreen({super.key});
+class NotificationsPanelScreen extends ConsumerStatefulWidget {
+  const NotificationsPanelScreen({
+    super.key,
+    this.initialNotificationId,
+  });
+
+  final String? initialNotificationId;
+
+  @override
+  ConsumerState<NotificationsPanelScreen> createState() =>
+      _NotificationsPanelScreenState();
+}
+
+class _NotificationsPanelScreenState
+    extends ConsumerState<NotificationsPanelScreen> {
+  bool _initialNotificationOpened = false;
 
   Future<void> _refresh(BuildContext context, WidgetRef ref) async {
     try {
-      ref.invalidate(notificationsFeedProvider);
-      ref.invalidate(unreadNotificationCountProvider);
-      await ref.read(notificationsFeedProvider.future);
+      await ref.read(notificationsFeedProvider.notifier).refresh();
 
       if (!context.mounted) return;
       AppError.showSuccess(context, 'Bildirimler yenilendi.');
@@ -25,24 +38,60 @@ class NotificationsPanelScreen extends ConsumerWidget {
 
   Future<void> _markAllRead(BuildContext context, WidgetRef ref) async {
     try {
-      final service = ref.read(notificationServiceProvider);
-      await service.markAllAsRead();
-      ref.invalidate(notificationsFeedProvider);
-      ref.invalidate(unreadNotificationCountProvider);
-
+      await ref.read(notificationsFeedProvider.notifier).markAllAsRead();
       if (!context.mounted) return;
-      AppError.showSuccess(context, 'Tüm bildirimler okundu olarak işaretlendi.');
+      AppError.showSuccess(
+          context, 'Tüm bildirimler okundu olarak işaretlendi.');
     } catch (e) {
       if (!context.mounted) return;
       AppError.showError(context, AppError.getUserFriendlyMessage(e));
     }
   }
 
-  void _openTarget(BuildContext context, WidgetRef ref, NotificationModel item) {
-    // Bildirimi okundu olarak işaretle
-    final service = ref.read(notificationServiceProvider);
-    service.markAsRead(item.id);
-    ref.invalidate(unreadNotificationCountProvider);
+  Future<bool> _deleteNotification(
+    BuildContext context,
+    WidgetRef ref,
+    NotificationModel item,
+  ) async {
+    try {
+      unawaited(
+        ref
+            .read(notificationsFeedProvider.notifier)
+            .deleteNotification(item.id)
+            .catchError((Object error) {
+          if (!context.mounted) return;
+          AppError.showError(context, AppError.getUserFriendlyMessage(error));
+        }),
+      );
+
+      if (!context.mounted) return true;
+      AppError.showSuccess(context, 'Bildirim silindi.');
+      return true;
+    } catch (e) {
+      if (!context.mounted) return false;
+      AppError.showError(context, AppError.getUserFriendlyMessage(e));
+      return false;
+    }
+  }
+
+  Future<void> _openTarget(
+    BuildContext context,
+    WidgetRef ref,
+    NotificationModel item,
+  ) async {
+    if (!item.isRead) {
+      unawaited(
+        ref
+            .read(notificationsFeedProvider.notifier)
+            .markAsRead(item.id)
+            .catchError((Object error) {
+          if (!context.mounted) return;
+          AppError.showError(context, AppError.getUserFriendlyMessage(error));
+        }),
+      );
+    }
+
+    if (!context.mounted) return;
 
     if (item.type == 'event' && item.targetId != null) {
       Navigator.pushNamed(context, '/event_details', arguments: item.targetId);
@@ -54,7 +103,6 @@ class NotificationsPanelScreen extends ConsumerWidget {
       return;
     }
 
-    // Feedback ve broadcast bildirimleri için detay göster
     _showNotificationDetail(context, item);
   }
 
@@ -84,7 +132,8 @@ class NotificationsPanelScreen extends ConsumerWidget {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                    color: theme.colorScheme.onSurfaceVariant
+                        .withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -152,28 +201,45 @@ class NotificationsPanelScreen extends ConsumerWidget {
     }
   }
 
+  void _maybeOpenInitialNotification(List<NotificationModel> items) {
+    if (_initialNotificationOpened) return;
+
+    final notificationId = widget.initialNotificationId?.trim();
+    if (notificationId == null || notificationId.isEmpty) return;
+
+    NotificationModel? target;
+    for (final item in items) {
+      if (item.id == notificationId) {
+        target = item;
+        break;
+      }
+    }
+
+    if (target == null) return;
+    _initialNotificationOpened = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _openTarget(context, ref, target!);
+    });
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final notificationsAsync = ref.watch(notificationsFeedProvider);
-    final unreadAsync = ref.watch(unreadNotificationCountProvider);
+    final unreadCount = ref.watch(unreadNotificationCountProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bildirimler'),
         actions: [
-          unreadAsync.when(
-            data: (count) {
-              if (count == 0) return const SizedBox.shrink();
-              return TextButton.icon(
-                onPressed: () => _markAllRead(context, ref),
-                icon: const Icon(Icons.done_all, size: 18),
-                label: const Text('Tümünü Oku'),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, __) => const SizedBox.shrink(),
-          ),
+          if (unreadCount > 0)
+            TextButton.icon(
+              onPressed: () => _markAllRead(context, ref),
+              icon: const Icon(Icons.done_all, size: 18),
+              label: const Text('Tümünü Oku'),
+            ),
         ],
       ),
       body: RefreshIndicator(
@@ -181,6 +247,7 @@ class NotificationsPanelScreen extends ConsumerWidget {
         onRefresh: () => _refresh(context, ref),
         child: notificationsAsync.when(
           data: (items) {
+            _maybeOpenInitialNotification(items);
             if (items.isEmpty) {
               return const CustomScrollView(
                 physics: AlwaysScrollableScrollPhysics(),
@@ -188,8 +255,7 @@ class NotificationsPanelScreen extends ConsumerWidget {
                   VenueEmptyState(
                     icon: Icons.notifications_off_outlined,
                     title: 'Henüz bildirimin yok',
-                    subtitle:
-                        'Yeni bildirimler ve duyurular burada görünecek.',
+                    subtitle: 'Yeni bildirimler ve duyurular burada görünecek.',
                   ),
                 ],
               );
@@ -202,9 +268,29 @@ class NotificationsPanelScreen extends ConsumerWidget {
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
                       final item = items[index];
-                      return _NotificationCard(
-                        item: item,
-                        onTap: () => _openTarget(context, ref, item),
+                      return Dismissible(
+                        key: ValueKey(item.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          margin: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: Icon(
+                            Icons.delete_outline_rounded,
+                            color: theme.colorScheme.onErrorContainer,
+                          ),
+                        ),
+                        confirmDismiss: (_) async {
+                          return _deleteNotification(context, ref, item);
+                        },
+                        child: _NotificationCard(
+                          item: item,
+                          onTap: () => _openTarget(context, ref, item),
+                        ),
                       );
                     },
                     childCount: items.length,
@@ -324,8 +410,9 @@ class _NotificationCard extends StatelessWidget {
                             child: Text(
                               item.title,
                               style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight:
-                                    item.isRead ? FontWeight.w500 : FontWeight.w700,
+                                fontWeight: item.isRead
+                                    ? FontWeight.w500
+                                    : FontWeight.w700,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

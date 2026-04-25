@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:campus_online/providers/notifications_provider.dart';
 import 'package:campus_online/providers/venue_provider.dart';
 import 'package:campus_online/providers/venue_actions.dart';
 import 'package:campus_online/providers/search_state.dart';
@@ -63,6 +64,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         : ref.watch(searchVenuesProvider(searchQuery));
     final featuredVenuesAsync = ref.watch(featuredVenuesProvider);
     final recentlyViewedVenuesAsync = ref.watch(recentlyViewedVenuesProvider);
+    final unreadNotificationCount = ref.watch(unreadNotificationCountProvider);
 
     return Scaffold(
       body: RefreshIndicator(
@@ -138,9 +140,46 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               actions: [
                 if (!_isSearchActive)
                   IconButton(
-                    icon: Icon(
-                      Icons.notifications_none_rounded,
-                      color: theme.colorScheme.onSurface,
+                    icon: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.notifications_none_rounded,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        if (unreadNotificationCount > 0)
+                          Positioned(
+                            right: -6,
+                            top: -6,
+                            child: Container(
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 4),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.error,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: theme.scaffoldBackgroundColor,
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  unreadNotificationCount > 99
+                                      ? '99+'
+                                      : unreadNotificationCount.toString(),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: theme.colorScheme.onError,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     tooltip: 'Bildirimler',
                     onPressed: _openNotificationsPanel,

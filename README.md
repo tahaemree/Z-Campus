@@ -68,8 +68,12 @@ Not: `lib/config/env_config.dart` icinde publishable varsayilanlar vardir; produ
 
 ```bash
 supabase functions deploy create-staff-account
-supabase functions deploy dispatch-notification-push
+supabase functions deploy dispatch-notification-push --no-verify-jwt
 ```
+
+Push bildirim zincirinin tamamlanmasi icin Supabase Vault icinde
+`firebase_service_account_json` secret'i bulunmalidir. Bu deger, Firebase
+projesinin servis hesabi JSON'inin tam icerigi olmalidir.
 
 ## iOS Compatibility (v3)
 

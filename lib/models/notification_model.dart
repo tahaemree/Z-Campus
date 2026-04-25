@@ -39,6 +39,32 @@ class NotificationModel {
     );
   }
 
+  NotificationModel copyWith({
+    String? id,
+    String? userId,
+    String? title,
+    String? body,
+    String? type,
+    String? targetId,
+    bool? isRead,
+    String? createdBy,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return NotificationModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      body: body ?? this.body,
+      type: type ?? this.type,
+      targetId: targetId ?? this.targetId,
+      isRead: isRead ?? this.isRead,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   bool get isBroadcast => userId == null && type == 'admin_broadcast';
   bool get isFeedback => type == 'feedback';
 }

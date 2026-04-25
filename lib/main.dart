@@ -28,8 +28,10 @@ ProviderScope _buildRootScope(ThemeNotifier themeNotifier, Widget child) {
   );
 }
 
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
+
 final PushNotificationService _pushNotificationService =
-    PushNotificationService();
+    PushNotificationService(navigatorKey: appNavigatorKey);
 
 bool _isPushMessagingSupportedPlatform() {
   if (kIsWeb) return false;
@@ -177,6 +179,7 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      navigatorKey: appNavigatorKey,
       title: 'Campus Online',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
@@ -185,6 +188,11 @@ class MyApp extends ConsumerWidget {
         data: (_) {
           // Check current session after any auth state change
           final session = Supabase.instance.client.auth.currentSession;
+          if (session != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _pushNotificationService.processPendingNavigation();
+            });
+          }
           return session != null ? const MainScreen() : const SignIn();
         },
         loading: () => const Scaffold(
@@ -219,8 +227,11 @@ class MyApp extends ConsumerWidget {
               builder: (_) => EventDetailScreen(eventId: eventId),
             );
           case '/notifications':
+            final initialNotificationId = settings.arguments as String?;
             return MaterialPageRoute(
-              builder: (_) => const NotificationsPanelScreen(),
+              builder: (_) => NotificationsPanelScreen(
+                initialNotificationId: initialNotificationId,
+              ),
             );
           case '/privacy_policy':
             return MaterialPageRoute(

@@ -41,3 +41,32 @@ supabase functions deploy create-staff-account
   "user_id": "<auth-user-uuid>"
 }
 ```
+
+## dispatch-notification-push
+
+This function delivers notification rows to Firebase Cloud Messaging and writes
+delivery attempts to `notification_push_deliveries`.
+
+### Why this exists
+
+The database remains the source of truth for notifications. After a row is
+inserted, the trigger pipeline calls this Edge Function so users can receive a
+device-level push without opening the app first.
+
+### Deploy
+
+```bash
+supabase functions deploy dispatch-notification-push --no-verify-jwt
+```
+
+### Required secrets
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- Vault secret: `push_dispatch_secret`
+- Vault secret: `firebase_service_account_json`
+
+### Important note
+
+If `firebase_service_account_json` is missing, notifications will still be
+created in the app database but no external device push can be delivered.

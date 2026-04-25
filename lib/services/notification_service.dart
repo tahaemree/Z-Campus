@@ -17,7 +17,7 @@ class NotificationService {
       final response = await _supabase
           .from(dbNotificationsTable)
           .select()
-          .or('user_id.eq.$userId,and(user_id.is.null,type.eq.admin_broadcast)')
+          .eq('user_id', userId)
           .order('created_at', ascending: false)
           .limit(limit);
 
@@ -35,6 +35,22 @@ class NotificationService {
     }
   }
 
+  Stream<List<NotificationModel>> watchNotifications() {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return Stream.value(const <NotificationModel>[]);
+
+    return _supabase
+        .from(dbNotificationsTable)
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .map((rows) {
+          final items =
+              rows.map(NotificationModel.fromJson).toList(growable: false);
+          items.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return items;
+        });
+  }
+
   Future<int> fetchUnreadCount() async {
     try {
       final userId = _supabase.auth.currentUser?.id;
@@ -43,7 +59,7 @@ class NotificationService {
       final response = await _supabase
           .from(dbNotificationsTable)
           .select('id')
-          .or('user_id.eq.$userId,and(user_id.is.null,type.eq.admin_broadcast)')
+          .eq('user_id', userId)
           .eq('is_read', false);
 
       return (response as List<dynamic>).length;
@@ -84,6 +100,21 @@ class NotificationService {
       rethrow;
     } catch (error) {
       debugPrint('Tüm bildirimler okundu olarak işaretlenemedi: $error');
+    }
+  }
+
+  Future<void> deleteNotification(String notificationId) async {
+    try {
+      await _supabase
+          .from(dbNotificationsTable)
+          .delete()
+          .eq('id', notificationId);
+    } on PostgrestException catch (error) {
+      if (isMissingRelation(error, dbNotificationsTable)) return;
+      rethrow;
+    } catch (error) {
+      debugPrint('Bildirim silinemedi: $error');
+      rethrow;
     }
   }
 

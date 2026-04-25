@@ -21,6 +21,11 @@ Bu klasördeki SQL dosyalarını **sırasıyla** Supabase Dashboard > SQL Editor
 | 13 | `013_notifications_system.sql` | Uygulama ici bildirim sistemi + feedback trigger bildirimleri | **KRİTİK** |
 | 14 | `014_push_tokens_and_fcm_registration.sql` | FCM cihaz token kaydi ve RPC bazli token yonetimi | **KRİTİK** |
 | 15 | `015_push_tokens_acl_hardening.sql` | Push token tablosu icin varsayilan genis haklari kaldirma | **KRİTİK** |
+| 16 | `016_enterprise_notification_delivery.sql` | Push dispatch pipeline, trigger ve delivery audit altyapisi | **KRİTİK** |
+| 17 | `017_fix_internal_edge_invoke_key.sql` | Internal edge invoke key'i legacy anon JWT ile sabitleme | **KRİTİK** |
+| 18 | `018_feedback_admin_target_fix.sql` | Feedback admin hedefleme duzeltmesi | **KRİTİK** |
+| 19 | `019_push_dispatch_auth_header_fix.sql` | DB->Edge dispatch cagrisinda Authorization header kaynagini sabitleme | **KRİTİK** |
+| 20 | `020_broadcast_target_auth_users_fix.sql` | Broadcast bildirim hedeflemesini auth.users tabanli ve eksiksiz hale getirme | **KRİTİK** |
 
 ## Nasıl Çalıştırılır
 
@@ -28,7 +33,7 @@ Bu klasördeki SQL dosyalarını **sırasıyla** Supabase Dashboard > SQL Editor
 2. Sol menüden **SQL Editor** seçin
 3. Her dosyanın içeriğini kopyalayıp yapıştırın
 4. **Run** butonuna basın
-5. Sırayla 001, 002, 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 013, 014, 015 şeklinde ilerleyin
+5. Sırayla 001, 002, 003, 004, 005, 006, 007, 008, 009, 010, 011, 012, 013, 014, 015, 016, 017, 018, 019, 020 şeklinde ilerleyin
 
 ## Notlar
 

@@ -43,6 +43,7 @@ function buildPushData(notification: NotificationRow): Record<string, string> {
   const data: Record<string, string> = {
     notification_id: notification.id,
     type: notification.type,
+    click_action: 'FLUTTER_NOTIFICATION_CLICK',
   }
 
   if (notification.target_id) {
@@ -274,6 +275,25 @@ Deno.serve(async (request) => {
               body: notification.body,
             },
             data: buildPushData(notification),
+            android: {
+              priority: 'high',
+              notification: {
+                channel_id: 'high_importance_channel',
+                click_action: 'FLUTTER_NOTIFICATION_CLICK',
+                sound: 'default',
+              },
+            },
+            apns: {
+              headers: {
+                'apns-priority': '10',
+              },
+              payload: {
+                aps: {
+                  sound: 'default',
+                  badge: 1,
+                },
+              },
+            },
           },
         }),
       },
