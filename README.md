@@ -131,4 +131,6 @@ We welcome contributions! Please follow our [Contributing Guidelines](CONTRIBUTI
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This software is strictly for **educational and portfolio demonstration purposes**. It is licensed under a custom **Non-Commercial License** (All Rights Reserved).
+
+You are **NOT authorized** to use, sell, or distribute this software for any commercial purposes without explicit prior written permission. Please see the [LICENSE](LICENSE) file for complete details.
