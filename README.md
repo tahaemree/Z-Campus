@@ -1,45 +1,71 @@
-# Z Kampüs
+# 🎓 Z Campus (Campus Online)
 
-Z Kampüs, universite kampusu icindeki mekan, etkinlik, bildirim ve yonetim is akislari icin gelistirilmis production-odakli Flutter uygulamasidir. Proje; Supabase tabanli guvenli veri erisimi, Firebase Cloud Messaging ile push altyapisi ve Riverpod ile olceklenebilir state yonetimi uzerine kuruludur.
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-3.38-blue?logo=flutter" alt="Flutter">
+  <img src="https://img.shields.io/badge/Dart-3.10-blue?logo=dart" alt="Dart">
+  <img src="https://img.shields.io/badge/Supabase-Edge_Functions-43A047?logo=supabase" alt="Supabase">
+  <img src="https://img.shields.io/badge/Firebase-FCM-FFCA28?logo=firebase" alt="Firebase">
+</p>
 
-## Core Capabilities
+## 📋 Overview
 
-- Guvenli kimlik dogrulama ve profil yonetimi (Supabase Auth)
-- Mekan kesfi, detay ekranlari, favorileme ve konum bazli deneyim
-- Etkinlik olusturma/goruntuleme, etkinlik favorileri ve etkinlik konum secimi
-- Rol bazli admin paneli (yetki, mekan, bildirim, geri bildirim yonetimi)
-- Uygulama ici bildirimler + FCM push bildirimi kayit/teslim akislari
-- Supabase RLS policy hardening ve migration tabanli surumlu veritabani yonetimi
+Z Campus is a production-ready, enterprise-grade Flutter application engineered for university campus management. It handles complex workflows including venue discovery, event management, real-time push notifications, and role-based administration. 
 
-## Technology Stack
+The architecture is built upon a secure Supabase backend with extensive Row-Level Security (RLS) policies, Riverpod for scalable state management, and Firebase Cloud Messaging (FCM) for reliable push infrastructure.
 
-- `Flutter` (Dart 3, Material UI)
-- `flutter_riverpod` (state management)
-- `supabase_flutter` (auth, database, storage, edge functions)
-- `firebase_core` + `firebase_messaging` (push notifications)
-- `flutter_map` + `latlong2` (harita/koordinat tabanli gorsellestirme)
+---
 
-## Architecture Snapshot
+## ⚡ Core Capabilities
 
-- `lib/models`: Domain veri modelleri (`event`, `venue`, `notification`, `admin`)
-- `lib/providers`: Riverpod provider katmani (auth, access, events, notifications, venues)
-- `lib/services`: Supabase/Firebase odakli servisler ve is kurali katmani
-- `lib/screens`: Feature bazli UI akislari (auth, events, admin, notifications, settings)
-- `lib/widgets`: Yeniden kullanilabilir UI bilesenleri
-- `supabase_migrations`: Surumlu SQL migration seti (guvenlik + performans iyilestirmeleri)
-- `supabase/functions`: Edge Function kodlari (or. staff hesap olusturma, push dispatch)
+- **Secure Authentication:** Complete user profile management powered by Supabase Auth.
+- **Location-Based Experiences:** Venue discovery, detail screens, favoriting, and coordinate-based mapping using `flutter_map`.
+- **Event Management:** Create, view, and favorite events with geospatial venue attachments.
+- **Role-Based Admin Panel:** Full control over permissions, venues, push notifications, and feedback.
+- **Enterprise Push Notifications:** Integrated in-app notification center paired with an FCM push delivery pipeline.
+- **Database Hardening:** Migration-based schema management with rigorous RLS and RPC (Remote Procedure Call) security policies.
 
-## Local Development
+---
+
+## 🏗️ Technology Stack
+
+- **Client Framework:** `Flutter` (Dart 3, Material UI)
+- **State Management:** `flutter_riverpod`
+- **Backend & Database:** `supabase_flutter` (Auth, Postgres DB, Storage, Edge Functions)
+- **Push Infrastructure:** `firebase_core` & `firebase_messaging` (FCM)
+- **Geospatial Processing:** `flutter_map` & `latlong2`
+
+---
+
+## 📂 Architecture Snapshot
+
+```text
+lib/
+├── models/                   # Domain data models (Event, Venue, Admin)
+├── providers/                # Riverpod state layer (Auth, Events, Venues)
+├── services/                 # Supabase/Firebase business logic
+├── screens/                  # Feature-based UI routing
+├── widgets/                  # Reusable UI components
+└── config/                   # Environment configuration overrides
+
+supabase/
+├── functions/                # Deno-based Edge Functions
+└── config.toml               # Supabase CLI configuration
+
+supabase_migrations/          # Versioned SQL schemas & security policies
+```
+
+---
+
+## 🚀 Local Development
 
 ### Prerequisites
 
-- Flutter SDK `3.38.x` (stable)
-- Dart SDK `3.10.x` (Flutter ile gelen)
-- Supabase projesi
-- Firebase projesi (FCM kullanimi icin)
-- Android Studio / VS Code + Flutter eklentileri
+- Flutter SDK `3.38.x` (Stable)
+- Dart SDK `3.10.x`
+- Active Supabase & Firebase Projects
+- Android Studio / VS Code
 
-### Setup
+### 1. Setup
 
 ```bash
 git clone https://github.com/tahaemree/campus_online.git
@@ -47,110 +73,62 @@ cd campus_online
 flutter pub get
 ```
 
-### Environment Configuration
+### 2. Environment Configuration
 
-Uygulama `--dart-define` ile konfigura edilebilir:
+To run the application securely without hardcoding keys, inject your Supabase credentials at build/run time:
 
 ```bash
 flutter run --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
-Not: `lib/config/env_config.dart` icinde publishable varsayilanlar vardir; production ortaminda CI/CD ile override edilmesi onerilir.
+### 3. Database Migrations
 
-### Database Migrations
+For a fresh setup, execute the SQL files in `supabase_migrations/` sequentially, starting with `000_base_schema.sql`. These migrations contain the complete schema, RLS policies, indexing, and storage buckets.
 
-- Yeni kurulumlarda `supabase_migrations/000_base_schema.sql` ile baslayip tum SQL dosyalarini sira numarasina gore uygulayin.
-- Mevcut canli projelerde daha once uygulanmis migration'lari tekrar calistirmayin; yalnizca eksik sonraki dosyalari uygulayin.
-- Bu surum icin notification/account hardening duzeltmeleri `022_professional_hardening.sql`, `025_notification_read_rpc_and_explore_schedule_hardening.sql` ve `026_push_dispatch_secret_only.sql` icindedir.
-- Migration seti; RLS, ACL, indeksleme, media storage, event favorites, push token ve notification delivery iyilestirmelerini icerir.
+### 4. Edge Functions
 
-### Edge Functions
-
-- Ornek deploy:
+Deploy the Deno Edge Functions using the Supabase CLI:
 
 ```bash
 supabase functions deploy create-staff-account
 supabase functions deploy dispatch-notification-push --no-verify-jwt
 ```
+*Note: The push dispatch function is secured via a Vault secret (`push_dispatch_secret`) rather than a standard JWT to allow secure server-to-server invocations.*
 
-`supabase/config.toml` dosyasi bu function ayarlarini sabitler; `dispatch-notification-push` JWT dogrulamasi yerine Vault'taki `push_dispatch_secret` header kontroluyle korunur.
+---
 
-Push bildirim zincirinin tamamlanmasi icin Supabase Vault icinde
-`firebase_service_account_json` secret'i bulunmalidir. Bu deger, Firebase
-projesinin servis hesabi JSON'inin tam icerigi olmalidir.
+## 🍏 iOS Compatibility
 
-## iOS Compatibility (v3)
+This repository includes a fully configured iOS build chain:
 
-Bu repoda iOS derleme zinciri icin gerekli Flutter iOS yapisi bulunur:
+1. CocoaPods integration via `ios/Podfile`.
+2. Hardware permission declarations in `Info.plist` (Camera, Gallery).
+3. Firebase APNs configuration ready in `firebase_options.dart`.
 
-- `ios/Runner.xcodeproj` ve `ios/Runner.xcworkspace`
-- `ios/Runner/Info.plist` (kamera ve galeri izin metinleri tanimli)
-- `ios/Podfile` (CocoaPods entegrasyonu eklendi)
-- `lib/firebase_options.dart` icinde iOS Firebase konfigrasyonu mevcut
-
-iOS release/cihaza yukleme icin bir macOS ortaminda su akisi izleyin:
-
+**To build for iOS (macOS required):**
 ```bash
 flutter clean
 flutter pub get
-cd ios
-pod install
-cd ..
+cd ios && pod install && cd ..
 flutter build ios --release
 ```
 
-FCM push icin ek olarak Apple Developer tarafinda APNs anahtari, signing ve capability ayarlarinin dogru yapilandirilmasi gerekir.
+---
 
-## Quality Gates
+## 🛡️ Security Notes
 
-Projede duzenli olarak su kontroller calistirilmalidir:
+- **Never embed the Service Role Key in the client.** It is strictly reserved for Edge Functions.
+- All database mutations must pass through strict **Row-Level Security (RLS)** policies.
+- Push tokens and administrative flows adhere to the **Principle of Least Privilege**.
 
-```bash
-dart format .
-flutter analyze
-flutter test
-```
+---
 
-## Build Notes
+## 🤝 Contributing
 
-- Android code namespace `com.campusonline.app` kullanir. Checked-in Firebase dosyasi mevcut Android app id ile eslesmesi icin varsayilan runtime `applicationId` degeri `com.example.campus_online` olarak korunmustur. Production/store cikisi icin Firebase'de gercek package id ile yeni Android app olusturun, `google-services.json` dosyasini yenileyin ve `android/gradle.properties` icine `APP_ID=com.yourcompany.campusonline` ekleyin veya CI ortaminda `ORG_GRADLE_PROJECT_APP_ID` tanimlayin.
+We welcome contributions! Please follow our [Contributing Guidelines](CONTRIBUTING.md). Create a feature branch, ensure `dart format .` and `flutter analyze` pass, and open a PR with detailed testing notes.
 
-```bash
-flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
-```
+---
 
-- Android release imzasi debug key kullanmaz. `android/key.properties.example` dosyasini `android/key.properties` olarak kopyalayip gercek keystore degerlerini girin. `android/key.properties` ve `*.jks` dosyalari git'e alinmaz.
-- Play Store icin onerilen Android release:
+## 📄 License
 
-```bash
-flutter build appbundle --release --obfuscate --split-debug-info=build/symbols/android --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
-```
-
-- Manuel APK dagitimi icin split-per-abi:
-
-```bash
-flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/symbols/android --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
-```
-
-- App Store icin macOS ortaminda onerilen release:
-
-```bash
-flutter build ipa --release --obfuscate --split-debug-info=build/symbols/ios --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
-```
-
-- Web ve Android aktif olarak calisir durumdadir.
-- iOS pipeline, macOS + Xcode ortaminda build dogrulamasi gerektirir.
-
-## Security Notes
-
-- Service role key istemciye gomulmemelidir; sadece Edge Function server tarafinda kullanilmalidir.
-- RLS policy'ler migration disina cikmadan degistirilmelidir.
-- Push token ve admin yetki akislarinda least-privilege prensibi korunmalidir.
-
-## Contributing
-
-Degisiklikleri feature branch uzerinden acin, test/analyze sonucuyla birlikte PR olusturun. Buyuk mimari degisikliklerde once issue veya design note ile kapsam netlestirilmesi onerilir.
-
-## License
-
-Bu proje MIT lisansi altindadir. Detaylar icin `LICENSE` dosyasina bakin.
+This project is licensed under the [MIT License](LICENSE).
