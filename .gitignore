@@ -70,3 +70,7 @@ android/key.properties
 *.p8
 *.pem
 *.key
+
+# Firebase and Supabase sensitive files
+android/app/google-services.json
+lib/firebase_options.dart
