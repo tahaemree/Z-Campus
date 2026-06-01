@@ -1,6 +1,6 @@
-# Campus Online v3
+# Z Kampüs
 
-Campus Online v3, universite kampusu icindeki mekan, etkinlik, bildirim ve yonetim is akislari icin gelistirilmis production-odakli Flutter uygulamasidir. Proje; Supabase tabanli guvenli veri erisimi, Firebase Cloud Messaging ile push altyapisi ve Riverpod ile olceklenebilir state yonetimi uzerine kuruludur.
+Z Kampüs, universite kampusu icindeki mekan, etkinlik, bildirim ve yonetim is akislari icin gelistirilmis production-odakli Flutter uygulamasidir. Proje; Supabase tabanli guvenli veri erisimi, Firebase Cloud Messaging ile push altyapisi ve Riverpod ile olceklenebilir state yonetimi uzerine kuruludur.
 
 ## Core Capabilities
 
@@ -59,7 +59,9 @@ Not: `lib/config/env_config.dart` icinde publishable varsayilanlar vardir; produ
 
 ### Database Migrations
 
-- `supabase_migrations` altindaki SQL dosyalarini sira numarasina gore uygulayin.
+- Yeni kurulumlarda `supabase_migrations/000_base_schema.sql` ile baslayip tum SQL dosyalarini sira numarasina gore uygulayin.
+- Mevcut canli projelerde daha once uygulanmis migration'lari tekrar calistirmayin; yalnizca eksik sonraki dosyalari uygulayin.
+- Bu surum icin notification/account hardening duzeltmeleri `022_professional_hardening.sql`, `025_notification_read_rpc_and_explore_schedule_hardening.sql` ve `026_push_dispatch_secret_only.sql` icindedir.
 - Migration seti; RLS, ACL, indeksleme, media storage, event favorites, push token ve notification delivery iyilestirmelerini icerir.
 
 ### Edge Functions
@@ -70,6 +72,8 @@ Not: `lib/config/env_config.dart` icinde publishable varsayilanlar vardir; produ
 supabase functions deploy create-staff-account
 supabase functions deploy dispatch-notification-push --no-verify-jwt
 ```
+
+`supabase/config.toml` dosyasi bu function ayarlarini sabitler; `dispatch-notification-push` JWT dogrulamasi yerine Vault'taki `push_dispatch_secret` header kontroluyle korunur.
 
 Push bildirim zincirinin tamamlanmasi icin Supabase Vault icinde
 `firebase_service_account_json` secret'i bulunmalidir. Bu deger, Firebase
@@ -102,16 +106,36 @@ FCM push icin ek olarak Apple Developer tarafinda APNs anahtari, signing ve capa
 Projede duzenli olarak su kontroller calistirilmalidir:
 
 ```bash
+dart format .
 flutter analyze
 flutter test
 ```
 
 ## Build Notes
 
-- Android release (split-per-abi):
+- Android code namespace `com.campusonline.app` kullanir. Checked-in Firebase dosyasi mevcut Android app id ile eslesmesi icin varsayilan runtime `applicationId` degeri `com.example.campus_online` olarak korunmustur. Production/store cikisi icin Firebase'de gercek package id ile yeni Android app olusturun, `google-services.json` dosyasini yenileyin ve `android/gradle.properties` icine `APP_ID=com.yourcompany.campusonline` ekleyin veya CI ortaminda `ORG_GRADLE_PROJECT_APP_ID` tanimlayin.
 
 ```bash
-flutter build apk --release --split-per-abi
+flutter build apk --release --split-per-abi --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+```
+
+- Android release imzasi debug key kullanmaz. `android/key.properties.example` dosyasini `android/key.properties` olarak kopyalayip gercek keystore degerlerini girin. `android/key.properties` ve `*.jks` dosyalari git'e alinmaz.
+- Play Store icin onerilen Android release:
+
+```bash
+flutter build appbundle --release --obfuscate --split-debug-info=build/symbols/android --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+```
+
+- Manuel APK dagitimi icin split-per-abi:
+
+```bash
+flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/symbols/android --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
+```
+
+- App Store icin macOS ortaminda onerilen release:
+
+```bash
+flutter build ipa --release --obfuscate --split-debug-info=build/symbols/ios --dart-define=SUPABASE_URL=<your-url> --dart-define=SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
 - Web ve Android aktif olarak calisir durumdadir.

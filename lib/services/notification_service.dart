@@ -74,41 +74,60 @@ class NotificationService {
 
   Future<void> markAsRead(String notificationId) async {
     try {
-      await _supabase
-          .from(dbNotificationsTable)
-          .update({'is_read': true}).eq('id', notificationId);
+      final response = await _supabase.rpc(
+        'mark_notification_read',
+        params: {'p_notification_id': notificationId},
+      );
+
+      if (response == false) {
+        throw Exception('Bildirim bulunamadı veya okundu işaretlenemedi.');
+      }
     } on PostgrestException catch (error) {
       if (isMissingRelation(error, dbNotificationsTable)) return;
       rethrow;
     } catch (error) {
       debugPrint('Bildirim okundu olarak işaretlenemedi: $error');
+      rethrow;
     }
   }
 
   Future<void> markAllAsRead() async {
     try {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) return;
-
-      await _supabase
-          .from(dbNotificationsTable)
-          .update({'is_read': true})
-          .eq('user_id', userId)
-          .eq('is_read', false);
+      await _supabase.rpc('mark_all_notifications_read');
     } on PostgrestException catch (error) {
       if (isMissingRelation(error, dbNotificationsTable)) return;
       rethrow;
     } catch (error) {
       debugPrint('Tüm bildirimler okundu olarak işaretlenemedi: $error');
+      rethrow;
     }
   }
 
   Future<void> deleteNotification(String notificationId) async {
     try {
-      await _supabase
-          .from(dbNotificationsTable)
-          .delete()
-          .eq('id', notificationId);
+      final response = await _supabase.rpc(
+        'delete_notification',
+        params: {'p_notification_id': notificationId},
+      );
+
+      if (response == false) {
+        throw Exception('Bildirim bulunamadı veya silme yetkiniz yok.');
+      }
+
+      // Backward compatibility for projects where the older void RPC is still
+      // deployed: verify that the visible row is gone before the UI reports
+      // success. Newer migrations return true and skip this extra round trip.
+      if (response != true) {
+        final remaining = await _supabase
+            .from(dbNotificationsTable)
+            .select('id')
+            .eq('id', notificationId)
+            .maybeSingle();
+
+        if (remaining != null) {
+          throw Exception('Bildirim silinemedi. Lütfen tekrar deneyin.');
+        }
+      }
     } on PostgrestException catch (error) {
       if (isMissingRelation(error, dbNotificationsTable)) return;
       rethrow;

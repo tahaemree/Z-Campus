@@ -12,6 +12,20 @@
 .swiftpm/
 migrate_working_dir/
 
+# Local agent/tooling state
+.agents/
+.mcp.json
+skills-lock.json
+.vscode/settings.json
+
+# Local source media and generated design assets that are not shipped by Flutter
+/venue_images/
+/Z_Kampus_Giris*.png
+/campus-online_new-logo.jpeg
+/izu_logo.jpg
+/lib/assets/Z_Kampus_Giris*.png
+/lib/assets/izu_logo.jpg
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -45,7 +59,14 @@ app.*.map.json
 /android/app/release
 
 # Secrets and service credentials
+.env
+.env.*
+!.env.example
+android/key.properties
+*.jks
 *-firebase-adminsdk-*.json
+*.p12
+*.mobileprovision
 *.p8
 *.pem
 *.key

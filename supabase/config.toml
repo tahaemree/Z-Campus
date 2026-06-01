@@ -1,0 +1,5 @@
+[functions.create-staff-account]
+verify_jwt = true
+
+[functions.dispatch-notification-push]
+verify_jwt = false

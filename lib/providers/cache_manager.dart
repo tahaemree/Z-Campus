@@ -9,6 +9,17 @@ class CacheEntry<T> {
   const CacheEntry({required this.data, required this.timestamp});
 }
 
+String scopedVenueCacheKey({
+  required String venueId,
+  required String? userId,
+}) {
+  return 'venue:${userId ?? 'anon'}:$venueId';
+}
+
+String scopedFeaturedVenuesCacheKey(String? userId) {
+  return 'featured:${userId ?? 'anon'}';
+}
+
 /// TTL-based cache manager for venue data.
 class CacheManager
     extends StateNotifier<Map<String, CacheEntry<List<VenueModel>>>> {

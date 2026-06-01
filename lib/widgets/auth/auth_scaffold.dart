@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:campus_online/config/app_config.dart';
 
 /// Shared auth scaffold — provides background, branding, and glassmorphism card.
 /// Used by both Login and Signup screens to eliminate UI duplication.
@@ -53,7 +54,7 @@ class AuthScaffold extends StatelessWidget {
           // Background Image
           Positioned.fill(
             child: Image.asset(
-              'assets/images/izu.png',
+              'assets/images/izu_fallback.jpg',
               fit: BoxFit.cover,
             ),
           ),
@@ -73,7 +74,7 @@ class AuthScaffold extends StatelessWidget {
                   const SizedBox(height: 50),
                   // Brand Title
                   Text(
-                    'Campus Online',
+                    AppConfig.appName,
                     style: TextStyle(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,

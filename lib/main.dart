@@ -18,6 +18,7 @@ import 'package:campus_online/screens/auth/login_screen.dart';
 import 'package:campus_online/screens/navi_bar.dart';
 import 'package:campus_online/config/theme/app_theme.dart';
 import 'package:campus_online/services/push_notification_service.dart';
+import 'package:campus_online/screens/animated_splash_screen.dart';
 
 ProviderScope _buildRootScope(ThemeNotifier themeNotifier, Widget child) {
   return ProviderScope(
@@ -168,11 +169,24 @@ class StartupErrorApp extends StatelessWidget {
   }
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  bool _showSplash = true;
+
+  void _onSplashComplete() {
+    setState(() {
+      _showSplash = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDarkMode = ref.watch(themeProvider).isDarkMode;
     // Watch auth state stream so UI reacts to login/logout/token changes
     final authAsync = ref.watch(authStateProvider);
@@ -184,22 +198,26 @@ class MyApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      home: authAsync.when(
-        data: (_) {
-          // Check current session after any auth state change
-          final session = Supabase.instance.client.auth.currentSession;
-          if (session != null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _pushNotificationService.processPendingNavigation();
-            });
-          }
-          return session != null ? const MainScreen() : const SignIn();
-        },
-        loading: () => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-        error: (_, __) => const SignIn(),
-      ),
+      home: _showSplash
+          ? AnimatedSplashScreen(onAnimationComplete: _onSplashComplete)
+          : authAsync.when(
+              data: (_) {
+                // Check current session after any auth state change
+                final session = Supabase.instance.client.auth.currentSession;
+                if (session != null) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _pushNotificationService.processPendingNavigation();
+                  });
+                }
+                return session != null ? const MainScreen() : const SignIn();
+              },
+              loading: () => const Scaffold(
+                backgroundColor: Color(0xFF8B2232),
+                body: Center(
+                    child: CircularProgressIndicator(color: Colors.white)),
+              ),
+              error: (_, __) => const SignIn(),
+            ),
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/venue_details':

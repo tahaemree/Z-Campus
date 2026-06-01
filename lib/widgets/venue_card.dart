@@ -232,12 +232,19 @@ class _VenueCardState extends ConsumerState<VenueCard> {
               ? CachedNetworkImage(
                   imageUrl: widget.imageUrl!,
                   fit: BoxFit.cover,
-                  placeholder: (_, __) =>
-                      Image.asset('assets/images/izu.png', fit: BoxFit.cover),
-                  errorWidget: (_, __, ___) =>
-                      Image.asset('assets/images/izu.png', fit: BoxFit.cover),
+                  placeholder: (_, __) => Image.asset(
+                    'assets/images/izu_fallback.jpg',
+                    fit: BoxFit.cover,
+                  ),
+                  errorWidget: (_, __, ___) => Image.asset(
+                    'assets/images/izu_fallback.jpg',
+                    fit: BoxFit.cover,
+                  ),
                 )
-              : Image.asset('assets/images/izu.png', fit: BoxFit.cover),
+              : Image.asset(
+                  'assets/images/izu_fallback.jpg',
+                  fit: BoxFit.cover,
+                ),
         ),
       ),
     );

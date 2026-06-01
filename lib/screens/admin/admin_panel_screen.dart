@@ -1,5 +1,6 @@
 import 'package:campus_online/providers/access_provider.dart';
 import 'package:campus_online/providers/venue_provider.dart';
+import 'package:campus_online/screens/admin/explore_management_page.dart';
 import 'package:campus_online/screens/admin/feedback_management_page.dart';
 import 'package:campus_online/screens/admin/notification_send_page.dart';
 import 'package:campus_online/screens/admin/permissions_management_page.dart';
@@ -41,7 +42,7 @@ class AdminPanelScreen extends ConsumerWidget {
         }
 
         final isAdmin = access.isAdmin;
-        final tabCount = isAdmin ? 4 : 1;
+        final tabCount = isAdmin ? 5 : 1;
 
         return DefaultTabController(
           length: tabCount,
@@ -56,6 +57,11 @@ class AdminPanelScreen extends ConsumerWidget {
                     icon: Icon(Icons.store_mall_directory_outlined),
                     text: 'Mekanlar',
                   ),
+                  if (isAdmin)
+                    const Tab(
+                      icon: Icon(Icons.explore_outlined),
+                      text: 'Keşfet',
+                    ),
                   if (isAdmin)
                     const Tab(
                       icon: Icon(Icons.manage_accounts_outlined),
@@ -80,6 +86,7 @@ class AdminPanelScreen extends ConsumerWidget {
                   venuesAsync: venuesAsync,
                   access: access,
                 ),
+                if (isAdmin) const ExploreManagementPage(),
                 if (isAdmin)
                   PermissionsManagementPage(venuesAsync: venuesAsync),
                 if (isAdmin) const FeedbackManagementPage(),

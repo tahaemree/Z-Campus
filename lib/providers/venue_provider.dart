@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:campus_online/commons/postgrest_helpers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,7 +90,7 @@ final venuesByCategoryProvider =
       response = await supabase.from('venues').select('''
             *,
             user_favorites!left(user_id)
-          ''').eq('category', category).order('name');
+          ''').eq('category', category).order('name', ascending: true);
     } else {
       response = await supabase
           .from('venues')
@@ -151,7 +152,11 @@ final searchVenuesProvider = FutureProvider.autoDispose
 final venueByIdProvider =
     FutureProvider.family<VenueModel, String>((ref, venueId) async {
   final cacheManager = ref.watch(venuesCacheProvider.notifier);
-  final cacheKey = 'venue_$venueId';
+  final supabase = ref.watch(supabaseProvider);
+  ref.watch(authStateProvider);
+
+  final userId = supabase.auth.currentUser?.id;
+  final cacheKey = scopedVenueCacheKey(venueId: venueId, userId: userId);
 
   if (cacheManager.hasValidCache(cacheKey)) {
     final cachedVenues = cacheManager.get(cacheKey);
@@ -161,9 +166,6 @@ final venueByIdProvider =
   }
 
   try {
-    final supabase = ref.watch(supabaseProvider);
-    final userId = supabase.auth.currentUser?.id;
-
     Map<String, dynamic> response;
 
     if (userId != null) {
@@ -186,10 +188,89 @@ final venueByIdProvider =
   }
 });
 
+class VenueFavoriteCountNotifier extends StateNotifier<AsyncValue<int>> {
+  VenueFavoriteCountNotifier(this._ref, this._venueId)
+      : super(const AsyncValue.loading()) {
+    refresh();
+  }
+
+  final Ref _ref;
+  final String _venueId;
+  int? _serverCount;
+  int _optimisticDelta = 0;
+  int _localRevision = 0;
+
+  Future<void> refresh() async {
+    final requestRevision = _localRevision;
+    final count = await _fetchCount();
+    if (!mounted || requestRevision != _localRevision) return;
+
+    _serverCount = count;
+    _emitCount();
+  }
+
+  void applyOptimisticDelta(int delta) {
+    _optimisticDelta += delta;
+    final current = state.valueOrNull ?? _serverCount ?? 0;
+    state = AsyncValue.data(math.max(0, current + delta));
+  }
+
+  Future<void> commitOptimisticDelta(int delta) async {
+    final current = state.valueOrNull ?? _serverCount ?? 0;
+    _optimisticDelta -= delta;
+    _serverCount = math.max(0, current - _optimisticDelta);
+    _localRevision++;
+    _emitCount();
+  }
+
+  void rollbackOptimisticDelta(int delta) {
+    _optimisticDelta -= delta;
+    final current = state.valueOrNull ?? _serverCount ?? 0;
+    state = AsyncValue.data(math.max(0, current - delta));
+  }
+
+  void _emitCount() {
+    final count = (_serverCount ?? 0) + _optimisticDelta;
+    state = AsyncValue.data(math.max(0, count));
+  }
+
+  Future<int> _fetchCount() async {
+    final supabase = _ref.read(supabaseProvider);
+
+    try {
+      final response = await supabase.rpc(
+        'get_venue_favorite_count',
+        params: {'p_venue_id': _venueId},
+      );
+
+      if (response is int) return response;
+      if (response is num) return response.toInt();
+
+      return int.tryParse(response?.toString() ?? '') ?? 0;
+    } on PostgrestException catch (error) {
+      if (error.code == 'PGRST202') return 0;
+      debugPrint('Error getting venue favorite count: $error');
+      return _serverCount ?? state.valueOrNull ?? 0;
+    } catch (error) {
+      debugPrint('Error getting venue favorite count: $error');
+      return _serverCount ?? state.valueOrNull ?? 0;
+    }
+  }
+}
+
+final venueFavoriteCountProvider = StateNotifierProvider.family<
+    VenueFavoriteCountNotifier, AsyncValue<int>, String>((ref, venueId) {
+  return VenueFavoriteCountNotifier(ref, venueId);
+});
+
 /// Featured venues with TTL cache.
 final featuredVenuesProvider = FutureProvider<List<VenueModel>>((ref) async {
   final cacheManager = ref.watch(venuesCacheProvider.notifier);
-  const cacheKey = 'featured';
+  final supabase = ref.watch(supabaseProvider);
+  ref.watch(authStateProvider);
+
+  final userId = supabase.auth.currentUser?.id;
+  final cacheKey = scopedFeaturedVenuesCacheKey(userId);
 
   if (cacheManager.hasValidCache(cacheKey)) {
     final cached = cacheManager.get(cacheKey);
@@ -197,9 +278,6 @@ final featuredVenuesProvider = FutureProvider<List<VenueModel>>((ref) async {
   }
 
   try {
-    final supabase = ref.watch(supabaseProvider);
-    final userId = supabase.auth.currentUser?.id;
-
     List<dynamic> response;
 
     if (userId != null) {

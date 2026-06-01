@@ -54,15 +54,9 @@ class _NotificationsPanelScreenState
     NotificationModel item,
   ) async {
     try {
-      unawaited(
-        ref
-            .read(notificationsFeedProvider.notifier)
-            .deleteNotification(item.id)
-            .catchError((Object error) {
-          if (!context.mounted) return;
-          AppError.showError(context, AppError.getUserFriendlyMessage(error));
-        }),
-      );
+      await ref
+          .read(notificationsFeedProvider.notifier)
+          .deleteNotification(item.id);
 
       if (!context.mounted) return true;
       AppError.showSuccess(context, 'Bildirim silindi.');

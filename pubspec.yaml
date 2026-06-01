@@ -1,5 +1,5 @@
-﻿name: "campus_online"
-description: "Campus information and navigation app"
+name: "campus_online"
+description: "Z Kampüs information and navigation app"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -13,17 +13,14 @@ dependencies:
   firebase_core: ^3.13.0
   firebase_messaging: ^15.2.5
   flutter_local_notifications: ^19.4.2
-  cupertino_icons: ^1.0.8
   flutter_riverpod: ^2.6.1
   shared_preferences: ^2.5.3
   cached_network_image: ^3.4.1
-  google_fonts: ^8.0.2
   supabase_flutter: ^2.8.0
   url_launcher: ^6.3.1
   image_picker: ^1.1.2
   flutter_map: ^8.2.2
   latlong2: ^0.9.1
-  transparent_image: ^2.0.1
 
 dev_dependencies:
   flutter_test:
@@ -32,17 +29,16 @@ dev_dependencies:
   flutter_native_splash: ^2.4.4
   flutter_launcher_icons: ^0.14.3
 flutter_native_splash:
-  color: "#2c2f60"
-  image: lib/assets/app_acilis.png
+  color: "#8B2232"
+  color_dark: "#8B2232"
   android: true
   ios: true
-  web: false # Web iÃ§in aÃ§Ä±lÄ±ÅŸ ekranÄ±nÄ± devre dÄ±ÅŸÄ± bÄ±rakÄ±yoruz
+  web: false # Web için açılış ekranını devre dışı bırakıyoruz
 
-  # Android 12 ve sonrasÄ± iÃ§in Ã¶zel ayarlar
+  # Android 12 ve sonrası için özel ayarlar
   android_12:
-    color: "#2c2f60"
-    image: lib/assets/app_acilis.png # Android 12 iÃ§in ikon
-    # icon_background_color: "#2c2f60" # Ä°konun kendisi iÃ§in bir arka plan gerekirse
+    color: "#8B2232"
+    color_dark: "#8B2232"
 
 flutter_launcher_icons:
   android: true
@@ -52,6 +48,4 @@ flutter_launcher_icons:
 flutter:
   uses-material-design: true
   assets:
-    - lib/assets/campus-online_new-logo.jpeg
-    - lib/assets/app_acilis.png
-    - assets/images/
+    - assets/images/izu_fallback.jpg

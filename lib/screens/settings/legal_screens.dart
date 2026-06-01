@@ -36,11 +36,11 @@ class PrivacyPolicyScreen extends StatelessWidget {
     return const LegalScreen(
       title: 'Gizlilik Politikası',
       content: '''
-Campus Online Mobil Uygulaması Gizlilik Politikası
+Z Kampüs Mobil Uygulaması Gizlilik Politikası
 
 Son Güncelleme Tarihi: 2 Mayıs 2025
 
-İşbu Gizlilik Politikası, Campus Online mobil uygulaması ("Uygulama") aracılığıyla topladığımız, kullandığımız, açıkladığımız ve koruduğumuz kişisel verilerinize ilişkin uygulamalarımızı açıklamaktadır. Uygulamayı kullanarak, işbu Gizlilik Politikası'nda açıklanan şartları kabul etmektesiniz.
+İşbu Gizlilik Politikası, Z Kampüs mobil uygulaması ("Uygulama") aracılığıyla topladığımız, kullandığımız, açıkladığımız ve koruduğumuz kişisel verilerinize ilişkin uygulamalarımızı açıklamaktadır. Uygulamayı kullanarak, işbu Gizlilik Politikası'nda açıklanan şartları kabul etmektesiniz.
 
 1. Toplanan Kişisel Veriler
 
@@ -99,11 +99,11 @@ class TermsOfServiceScreen extends StatelessWidget {
     return const LegalScreen(
       title: 'Kullanım Koşulları',
       content: '''
-Campus Online Mobil Uygulaması Kullanım Koşulları
+Z Kampüs Mobil Uygulaması Kullanım Koşulları
 
 Son Güncelleme Tarihi: 2 Mayıs 2025
 
-İşbu Kullanım Koşulları, Campus Online mobil uygulamasının ("Uygulama") kullanımına ilişkin şartları ve koşulları belirlemektedir. Uygulamayı indirerek, kurarak veya kullanarak, işbu Kullanım Koşulları'nın tamamını okuduğunuzu, anladığınızı ve kabul ettiğinizi beyan ve taahhüt etmektesiniz.
+İşbu Kullanım Koşulları, Z Kampüs mobil uygulamasının ("Uygulama") kullanımına ilişkin şartları ve koşulları belirlemektedir. Uygulamayı indirerek, kurarak veya kullanarak, işbu Kullanım Koşulları'nın tamamını okuduğunuzu, anladığınızı ve kabul ettiğinizi beyan ve taahhüt etmektesiniz.
 
 1. Uygulamanın Sağladığı Hizmetler
 
@@ -125,7 +125,7 @@ Uygulamayı kullanırken:
 
 3. Fikri Mülkiyet Hakları
 
-Uygulamanın tüm içeriği, yazılımı, tasarımları ve diğer fikri mülkiyet hakları Campus Online ekibine aittir ve ilgili yasalarla korunmaktadır.
+Uygulamanın tüm içeriği, yazılımı, tasarımları ve diğer fikri mülkiyet hakları Z Kampüs ekibine aittir ve ilgili yasalarla korunmaktadır.
 
 4. Sorumluluk Reddi
 

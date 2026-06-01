@@ -59,6 +59,11 @@ device-level push without opening the app first.
 supabase functions deploy dispatch-notification-push --no-verify-jwt
 ```
 
+The same setting is pinned in `supabase/config.toml` with
+`verify_jwt = false`. Do not remove the function's
+`X-Notification-Webhook-Secret` validation; it is the real guard for the
+database trigger path.
+
 ### Required secrets
 
 - `SUPABASE_URL`

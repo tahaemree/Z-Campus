@@ -41,9 +41,12 @@ class FavoriteIdsNotifier extends StateNotifier<Set<String>> {
   Future<void> toggle(String venueId) async {
     final supabase = _ref.read(supabaseProvider);
     final userId = supabase.auth.currentUser?.id;
-    if (userId == null) throw Exception('Favorilere eklemek için giriş yapmalısınız.');
+    if (userId == null) {
+      throw Exception('Favorilere eklemek için giriş yapmalısınız.');
+    }
 
     final wasFavorite = state.contains(venueId);
+    final favoriteCountDelta = wasFavorite ? -1 : 1;
 
     // ─── OPTIMISTIC: Update Set immediately ───
     if (wasFavorite) {
@@ -51,6 +54,9 @@ class FavoriteIdsNotifier extends StateNotifier<Set<String>> {
     } else {
       state = Set<String>.from(state)..add(venueId);
     }
+    _ref
+        .read(venueFavoriteCountProvider(venueId).notifier)
+        .applyOptimisticDelta(favoriteCountDelta);
 
     // ─── API CALL: Sync with server ───
     try {
@@ -66,6 +72,11 @@ class FavoriteIdsNotifier extends StateNotifier<Set<String>> {
             .eq('user_id', userId)
             .eq('venue_id', venueId);
       }
+
+      _invalidateVenueCaches(userId: userId, venueId: venueId);
+      await _ref
+          .read(venueFavoriteCountProvider(venueId).notifier)
+          .commitOptimisticDelta(favoriteCountDelta);
     } catch (e) {
       // ─── REVERT: Undo optimistic update on failure ───
       if (wasFavorite) {
@@ -73,9 +84,23 @@ class FavoriteIdsNotifier extends StateNotifier<Set<String>> {
       } else {
         state = Set<String>.from(state)..remove(venueId);
       }
+      _ref
+          .read(venueFavoriteCountProvider(venueId).notifier)
+          .rollbackOptimisticDelta(favoriteCountDelta);
       debugPrint('Error toggling favorite: $e');
       rethrow;
     }
+  }
+
+  void _invalidateVenueCaches({
+    required String userId,
+    required String venueId,
+  }) {
+    final cacheManager = _ref.read(venuesCacheProvider.notifier);
+    cacheManager.invalidate(
+      scopedVenueCacheKey(venueId: venueId, userId: userId),
+    );
+    cacheManager.invalidate(scopedFeaturedVenuesCacheKey(userId));
   }
 }
 

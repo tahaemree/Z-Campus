@@ -3,6 +3,7 @@ import 'package:campus_online/commons/app_error.dart';
 import 'package:campus_online/models/event_model.dart';
 import 'package:campus_online/providers/events_provider.dart';
 import 'package:campus_online/services/map_service.dart';
+import 'package:campus_online/widgets/over_image_icon_button.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -344,25 +345,24 @@ class EventDetailScreen extends ConsumerWidget {
       pinned: true,
       stretch: true,
       backgroundColor: theme.colorScheme.surface,
+      leadingWidth: 64,
+      leading: OverImageIconButton(
+        icon: Icons.arrow_back_rounded,
+        tooltip: 'Geri',
+        margin: const EdgeInsets.only(left: 12),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
       actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(
-              isFavorite ? Icons.favorite : Icons.favorite_border,
-              color: isFavorite ? Colors.red : Colors.white,
-              size: 28,
-            ),
-            onPressed: () => _toggleFavorite(
-              context,
-              ref,
-              event.id,
-              isFavorite,
-            ),
+        OverImageIconButton(
+          icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+          tooltip: isFavorite ? 'Favorilerden çıkar' : 'Favorilere ekle',
+          iconColor: isFavorite ? Colors.redAccent : Colors.white,
+          margin: const EdgeInsets.only(right: 12),
+          onPressed: () => _toggleFavorite(
+            context,
+            ref,
+            event.id,
+            isFavorite,
           ),
         ),
       ],
@@ -381,14 +381,14 @@ class EventDetailScreen extends ConsumerWidget {
                   imageUrl: event.imageUrl!,
                   fit: BoxFit.cover,
                   errorWidget: (_, __, ___) => Image.asset(
-                    'assets/images/izu.png',
+                    'assets/images/izu_fallback.jpg',
                     fit: BoxFit.cover,
                   ),
                 ),
               )
             else
               Image.asset(
-                'assets/images/izu.png',
+                'assets/images/izu_fallback.jpg',
                 fit: BoxFit.cover,
               ),
             Positioned(

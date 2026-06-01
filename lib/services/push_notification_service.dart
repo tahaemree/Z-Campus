@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:campus_online/commons/postgrest_helpers.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
@@ -26,9 +25,9 @@ bool isPushMessagingSupportedPlatform() {
 class PushNotificationService {
   static const String _highImportanceChannelId = 'high_importance_channel';
   static const String _highImportanceChannelName =
-      'High Importance Notifications';
+      'Z Kampüs Bildirimleri';
   static const String _highImportanceChannelDescription =
-      'Campus Online critical and real-time notifications';
+      'Z Kampüs kritik ve anlık bildirimleri';
   static const Duration _resumeTokenSyncThrottle = Duration(minutes: 5);
 
   PushNotificationService({
@@ -319,11 +318,10 @@ class PushNotificationService {
     if (currentUser == null) return;
 
     try {
-      await _supabase
-          .from(dbNotificationsTable)
-          .update({'is_read': true})
-          .eq('id', notificationId)
-          .eq('user_id', currentUser.id);
+      await _supabase.rpc(
+        'mark_notification_read',
+        params: {'p_notification_id': notificationId},
+      );
     } catch (error) {
       debugPrint('Push-open read sync failed: $error');
     }

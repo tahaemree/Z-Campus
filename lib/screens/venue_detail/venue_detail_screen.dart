@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_online/providers/venue_provider.dart';
@@ -5,7 +6,7 @@ import 'package:campus_online/providers/venue_actions.dart';
 import 'package:campus_online/models/venue_model.dart';
 import 'package:campus_online/services/map_service.dart';
 import 'package:campus_online/commons/app_error.dart';
-import 'package:transparent_image/transparent_image.dart';
+import 'package:campus_online/widgets/over_image_icon_button.dart';
 
 class VenueDetailScreen extends ConsumerStatefulWidget {
   final String venueId;
@@ -68,15 +69,22 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final venueAsync = ref.watch(venueByIdProvider(widget.venueId));
+    final favoriteCountAsync =
+        ref.watch(venueFavoriteCountProvider(widget.venueId));
     final favIds = ref.watch(favoriteIdsProvider);
 
     return Scaffold(
       body: venueAsync.when(
         data: (venue) {
           final isFav = favIds.contains(widget.venueId);
+          final favoriteCountText = favoriteCountAsync.when(
+            data: (count) => count.toString(),
+            loading: () => '...',
+            error: (_, __) => '-',
+          );
           return CustomScrollView(
             slivers: [
-              _buildAppBar(venue, theme, isFav),
+              _buildAppBar(context, venue, theme, isFav),
               SliverToBoxAdapter(
                 child: Container(
                   margin: const EdgeInsets.all(16),
@@ -241,9 +249,9 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                               Expanded(
                                 child: _buildStatItem(
                                   context,
-                                  Icons.favorite_outline,
+                                  Icons.favorite_rounded,
                                   'Favori',
-                                  isFav ? '❤️' : '🤍',
+                                  favoriteCountText,
                                   theme,
                                 ),
                               ),
@@ -253,14 +261,36 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
                                 color: theme.colorScheme.outline
                                     .withValues(alpha: 0.3),
                               ),
-                              Expanded(
-                                child: _buildStatItem(
-                                  context,
-                                  Icons.schedule_outlined,
-                                  'Durum',
-                                  _getOpenStatus(venue),
-                                  theme,
-                                ),
+                              Builder(
+                                builder: (context) {
+                                  final openStatus = _getOpenStatus(venue);
+                                  final isOpen = openStatus == 'Açık';
+                                  final isClosed = openStatus == 'Kapalı';
+
+                                  return Expanded(
+                                    child: _buildStatItem(
+                                      context,
+                                      isOpen
+                                          ? Icons.check_circle_outline_rounded
+                                          : (isClosed
+                                              ? Icons.cancel_outlined
+                                              : Icons.schedule_outlined),
+                                      'Durum',
+                                      openStatus,
+                                      theme,
+                                      valueColor: isOpen
+                                          ? Colors.green.shade600
+                                          : (isClosed
+                                              ? Colors.red.shade600
+                                              : null),
+                                      iconColor: isOpen
+                                          ? Colors.green.shade600
+                                          : (isClosed
+                                              ? Colors.red.shade600
+                                              : null),
+                                    ),
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -306,13 +336,25 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
     );
   }
 
-  SliverAppBar _buildAppBar(VenueModel venue, ThemeData theme, bool isFav) {
+  SliverAppBar _buildAppBar(
+    BuildContext context,
+    VenueModel venue,
+    ThemeData theme,
+    bool isFav,
+  ) {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
       stretch: true,
       backgroundColor: theme.colorScheme.surface,
       surfaceTintColor: theme.colorScheme.surfaceTint,
+      leadingWidth: 64,
+      leading: OverImageIconButton(
+        icon: Icons.arrow_back_rounded,
+        tooltip: 'Geri',
+        margin: const EdgeInsets.only(left: 12),
+        onPressed: () => Navigator.of(context).maybePop(),
+      ),
       flexibleSpace: FlexibleSpaceBar(
         stretchModes: const [
           StretchMode.zoomBackground,
@@ -324,14 +366,20 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
             venue.imageUrl != null
                 ? Hero(
                     tag: 'venue-${venue.id}',
-                    child: FadeInImage.memoryNetwork(
-                      placeholder: kTransparentImage,
-                      image: venue.imageUrl!,
+                    child: CachedNetworkImage(
+                      imageUrl: venue.imageUrl!,
                       fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                      ),
+                      errorWidget: (context, url, error) => Image.asset(
+                        'assets/images/izu_fallback.jpg',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   )
                 : Image.asset(
-                    'assets/images/izu.png',
+                    'assets/images/izu_fallback.jpg',
                     fit: BoxFit.cover,
                   ),
             Positioned(
@@ -356,20 +404,12 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
         ),
       ),
       actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
-            shape: BoxShape.circle,
-          ),
-          child: IconButton(
-            icon: Icon(
-              isFav ? Icons.favorite : Icons.favorite_border,
-              color: isFav ? Colors.red : Colors.white,
-              size: 28,
-            ),
-            onPressed: () => _handleToggleFavorite(venue.id),
-          ),
+        OverImageIconButton(
+          icon: isFav ? Icons.favorite : Icons.favorite_border,
+          tooltip: isFav ? 'Favorilerden çıkar' : 'Favorilere ekle',
+          iconColor: isFav ? Colors.redAccent : Colors.white,
+          margin: const EdgeInsets.only(right: 12),
+          onPressed: () => _handleToggleFavorite(venue.id),
         ),
       ],
     );
@@ -594,19 +634,22 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
     IconData icon,
     String label,
     String value,
-    ThemeData theme,
-  ) {
+    ThemeData theme, {
+    Color? valueColor,
+    Color? iconColor,
+  }) {
     return Column(
       children: [
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            color:
+                (iconColor ?? theme.colorScheme.primary).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: theme.colorScheme.primary,
+            color: iconColor ?? theme.colorScheme.primary,
             size: 20,
           ),
         ),
@@ -615,7 +658,7 @@ class _VenueDetailScreenState extends ConsumerState<VenueDetailScreen> {
           value,
           style: theme.textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
+            color: valueColor ?? theme.colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 2),

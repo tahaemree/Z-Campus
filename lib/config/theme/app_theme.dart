@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // ─── Brand Colors ───
   static const Color _brandPrimary = Color(0xFF8B2232); // IZU Bordo
   static const Color _brandPrimaryLight = Color(0xFFB5485A); // Lighter variant
+
+  static TextStyle _textStyle({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+  }) {
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+    );
+  }
 
   // ─── Light Theme ───
   static ThemeData get lightTheme {
@@ -29,12 +40,12 @@ class AppTheme {
     return ThemeData(
       colorScheme: colorScheme,
       useMaterial3: true,
-      textTheme: GoogleFonts.poppinsTextTheme(),
+      textTheme: ThemeData.light().textTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: _textStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: _brandPrimary,
@@ -46,13 +57,13 @@ class AppTheme {
         indicatorColor: _brandPrimary.withValues(alpha: 0.12),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(
+            return _textStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: _brandPrimary,
             );
           }
-          return GoogleFonts.poppins(
+          return _textStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: colorScheme.onSurfaceVariant,
@@ -68,7 +79,7 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle:
-              GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
+              _textStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -78,7 +89,7 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle:
-              GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+              _textStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -93,7 +104,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _brandPrimary, width: 2),
         ),
-        hintStyle: GoogleFonts.poppins(color: Colors.grey.shade500),
+        hintStyle: _textStyle(color: Colors.grey.shade500),
       ),
       cardTheme: CardThemeData(
         elevation: 3,
@@ -106,9 +117,9 @@ class AppTheme {
         indicatorColor: _brandPrimary,
         indicatorSize: TabBarIndicatorSize.tab,
         labelStyle:
-            GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+            _textStyle(fontWeight: FontWeight.w600, fontSize: 14),
         unselectedLabelStyle:
-            GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 14),
+            _textStyle(fontWeight: FontWeight.w500, fontSize: 14),
       ),
       dividerTheme: DividerThemeData(
         color: Colors.grey.shade200,
@@ -119,7 +130,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         backgroundColor: _brandPrimary,
-        contentTextStyle: GoogleFonts.poppins(color: Colors.white),
+        contentTextStyle: _textStyle(color: Colors.white),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
         backgroundColor: _brandPrimary,
@@ -153,12 +164,12 @@ class AppTheme {
       colorScheme: colorScheme,
       useMaterial3: true,
       scaffoldBackgroundColor: const Color(0xFF1A1113),
-      textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+      textTheme: ThemeData.dark().textTheme,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: _textStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
           color: _brandPrimaryLight,
@@ -170,13 +181,13 @@ class AppTheme {
         indicatorColor: _brandPrimaryLight.withValues(alpha: 0.2),
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.poppins(
+            return _textStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: _brandPrimaryLight,
             );
           }
-          return GoogleFonts.poppins(
+          return _textStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
             color: colorScheme.onSurfaceVariant,
@@ -192,7 +203,7 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle:
-              GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500),
+              _textStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
@@ -202,7 +213,7 @@ class AppTheme {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle:
-              GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+              _textStyle(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -217,7 +228,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: _brandPrimaryLight, width: 2),
         ),
-        hintStyle: GoogleFonts.poppins(color: Colors.grey.shade400),
+        hintStyle: _textStyle(color: Colors.grey.shade400),
       ),
       cardTheme: const CardThemeData(
         elevation: 3,
@@ -233,9 +244,9 @@ class AppTheme {
         indicatorColor: _brandPrimaryLight,
         indicatorSize: TabBarIndicatorSize.tab,
         labelStyle:
-            GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
+            _textStyle(fontWeight: FontWeight.w600, fontSize: 14),
         unselectedLabelStyle:
-            GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 14),
+            _textStyle(fontWeight: FontWeight.w500, fontSize: 14),
       ),
       dividerTheme: const DividerThemeData(
         color: Color(0xFF3D2E2F),
@@ -246,7 +257,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         backgroundColor: _brandPrimaryLight,
-        contentTextStyle: GoogleFonts.poppins(color: Colors.white),
+        contentTextStyle: _textStyle(color: Colors.white),
       ),
       iconTheme: IconThemeData(color: colorScheme.onSurfaceVariant),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(

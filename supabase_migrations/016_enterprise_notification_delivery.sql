@@ -41,30 +41,8 @@ END;
 $$;
 
 DO $$
-DECLARE
-  v_secret_id uuid;
 BEGIN
-  SELECT id
-  INTO v_secret_id
-  FROM vault.decrypted_secrets
-  WHERE name = 'edge_function_anon_key'
-  ORDER BY created_at DESC
-  LIMIT 1;
-
-  IF v_secret_id IS NULL THEN
-    PERFORM vault.create_secret(
-      'YOUR_SUPABASE_ANON_KEY',
-      'edge_function_anon_key',
-      'Campus Online internal Edge Function invoke key'
-    );
-  ELSE
-    PERFORM vault.update_secret(
-      v_secret_id,
-      'YOUR_SUPABASE_ANON_KEY',
-      'edge_function_anon_key',
-      'Campus Online internal Edge Function invoke key'
-    );
-  END IF;
+  RAISE NOTICE 'edge_function_anon_key is no longer stored by migrations.';
 END;
 $$;
 

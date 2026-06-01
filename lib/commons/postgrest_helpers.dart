@@ -1,8 +1,11 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 const dbNotificationsTable = 'notifications';
+const dbNotificationDismissalsTable = 'notification_dismissals';
 const dbUserFeedbackTable = 'user_feedback';
 const dbUserPushTokensTable = 'user_push_tokens';
+const dbExploreContributionsTable = 'explore_contributions';
+const dbExploreSettingsTable = 'explore_settings';
 
 String escapePostgrestLikeValue(String value) {
   return value

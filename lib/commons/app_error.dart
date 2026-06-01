@@ -10,6 +10,7 @@ class AppError {
         content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
       ),
     );
   }
@@ -20,6 +21,7 @@ class AppError {
         content: Text(message, style: const TextStyle(color: Colors.white)),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 1),
       ),
     );
   }
